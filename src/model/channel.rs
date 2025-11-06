@@ -4,7 +4,15 @@ pub type Snowflake = u64;
 
 pub type Timestamp = String;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
+pub struct Channel {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub channel_type: u8,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct User {
     //pub id: Snowflake,
     pub username: String,
@@ -45,9 +53,6 @@ pub struct MessageSnapshot {}
 pub struct MessageInteraction {}
 
 #[derive(Debug, Deserialize)]
-pub struct Channel {}
-
-#[derive(Debug, Deserialize)]
 pub struct MessageInteractionMetadata {}
 
 #[derive(Debug, Deserialize)]
@@ -77,14 +82,14 @@ pub enum Nonce {
     Integer(i64),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Message {
     //pub id: Snowflake,
     //pub channel_id: Snowflake,
     pub author: User,
     pub content: Option<String>,
-    /*pub timestamp: Timestamp,
-    pub edited_timestamp: Option<Timestamp>,
+    pub timestamp: String,
+    /*pub edited_timestamp: Option<Timestamp>,
     pub tts: bool,
     pub mention_everyone: bool,
     pub mentions: Vec<User>,
