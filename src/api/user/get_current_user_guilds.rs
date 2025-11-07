@@ -3,7 +3,7 @@ use reqwest::Client;
 use crate::model::guild::Guild;
 
 pub async fn get_current_user_guilds(client: &Client, token: &str) -> Result<Vec<Guild>, String> {
-    let url = "https://discord.com/api/v10/users/@me/guilds?limit=100";
+    let url = "https://discord.com/api/v10/users/@me/guilds";
     let response = client
         .get(url)
         .header("Authorization", token)
