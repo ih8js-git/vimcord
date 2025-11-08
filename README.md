@@ -1,0 +1,96 @@
+# Rivet
+
+
+## Table of Content
+
+- [About](#about)
+  - [Terms of Service Notice](#terms-of-service-notice)
+- [Installation](#installation)
+  - [Dependencies](#dependencies)
+  - [Compilation](#compilation)
+  - [Initialization](#initialization)
+- [Usage](#usage)
+- [Licence](#licence)
+
+## About
+
+> [!NOTE]
+> A Terminal UI Discord Client in Rust.
+
+> [!WARNING]
+> **Work In Progress**
+
+<img src="./readme/wip.gif" alt="Work In Progress">
+
+### Terms of Service Notice
+> [!WARNING]
+> Under no circumstances should you use a Discord User Token (also known as a self-bot token) with this software or any associated tools.
+
+Discord's [Terms of Service (ToS)](https://discord.com/terms) explicitly and strictly prohibit the use of User Tokens for programmatic access or self-botting. Violation of these terms can lead to permanent termination of your Discord account.
+
+> - **Do not use self-bots or user-bots.** Each account must be associated with a human, not a bot.
+> Self-bots put strain on Discord’s infrastructure and our ability to run our services. For more information, you can read our Developer Policies [here](https://discord.com/developers/docs/policy).
+
+The developers, contributors, and maintainers of this repository disclaim all liability and responsibility for any and all consequences that may arise from a user's decision to violate Discord's Terms of Service.
+
+> [!CAUTION]
+> We do not encourage, endorse, or support the use of User Tokens.
+>
+> The user assumes all risk for any account actions, bans, or penalties issued by Discord due to improper use of this software.
+
+## Installation
+
+### Dependencies
+
+> [!IMPORTANT]
+> Make sure to have [Rust](https://www.rust-lang.org/tools/install) installed.
+
+### Compilation
+
+> [!NOTE]
+> Clone the repo somewhere and compile the program with [Cargo](https://doc.rust-lang.org/cargo/).
+
+```bash
+git clone https://github.com/YetAnotherMechanicusEnjoyer/Rivet
+cd Rivet/
+cargo build --release
+```
+
+### Initialization
+
+> [!NOTE]
+> Either make a `.env` file at the root of the repository that contains the `DISCORD_TOKEN` variable, save it in your shell env or write it with the command.
+
+> [!TIP]
+> Exemple of a `.env` file :
+
+```env
+DISCORD_TOKEN="your-token-here"
+```
+
+> [!TIP]
+> Exemple of a shell env variable :
+
+```env
+export DISCORD_TOKEN="your-token-here"
+```
+
+> [!TIP]
+> Exemple of a command-line env variable :
+
+```env
+DISCORD_TOKEN="your-token-here" cargo run --release
+```
+
+## Usage
+
+> [!NOTE]
+> Run the program with [Cargo](https://doc.rust-lang.org/cargo/).
+
+```bash
+cargo run --release
+```
+
+## Licence
+
+[MIT](./LICENSE)
