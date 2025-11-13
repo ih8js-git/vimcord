@@ -1,9 +1,9 @@
 use reqwest::Client;
 
-use crate::model::guild::Guild;
+use crate::{api::DISCORD_API_BASE_URL, model::guild::Guild};
 
 pub async fn get_current_user_guilds(client: &Client, token: &str) -> Result<Vec<Guild>, String> {
-    let url = "https://discord.com/api/v10/users/@me/guilds";
+    let url = format!("{DISCORD_API_BASE_URL}/users/@me/guilds");
     let response = client
         .get(url)
         .header("Authorization", token)
