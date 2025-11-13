@@ -1,5 +1,9 @@
 # Rivet
 
+> [!WARNING]
+> **Work In Progress**
+
+<img src="./readme/wip.gif" alt="Work In Progress">
 
 ## Table of Content
 
@@ -17,12 +21,8 @@
 > [!NOTE]
 > A Terminal UI Discord Client in Rust.
 
-> [!WARNING]
-> **Work In Progress**
-
-<img src="./readme/wip.gif" alt="Work In Progress">
-
 ### Terms of Service Notice
+>
 > [!WARNING]
 > Under no circumstances should you use a Discord User Token (also known as a self-bot token) with this software or any associated tools.
 
