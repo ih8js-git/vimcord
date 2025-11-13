@@ -16,17 +16,10 @@ use tokio::{
 };
 
 use crate::{
-    api::{
-        guild::get_guild_channels::get_guild_channels,
-        message::{create_message::create_message, get_channel_messages::get_channel_messages},
-        user::get_current_user_guilds::get_current_user_guilds,
-    },
-    model::{channel::Channel, guild::Guild, message::Message},
+    api::{create_message, get_channel_messages, get_current_user_guilds, get_guild_channels},
+    model::{Channel, Guild, Message},
     signals::{restore_terminal, setup_ctrlc_handler},
-    ui::{
-        draw::draw_ui,
-        events::{handle_input_events, handle_keys_events},
-    },
+    ui::{draw_ui, handle_input_events, handle_keys_events},
 };
 
 mod api;
