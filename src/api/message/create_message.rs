@@ -1,7 +1,7 @@
 use reqwest::{Client, Response};
 use serde_json::json;
 
-use crate::Error;
+use crate::{Error, api::DISCORD_API_BASE_URL};
 
 pub async fn create_message(
     client: &Client,
@@ -10,7 +10,7 @@ pub async fn create_message(
     content: Option<String>,
     tts: bool,
 ) -> Result<Response, Error> {
-    let api_url = format!("https://discord.com/api/v10/channels/{channel_id}/messages?");
+    let api_url = format!("{DISCORD_API_BASE_URL}/channels/{channel_id}/messages?");
 
     let content: &str = &content.unwrap_or("".to_string());
 
