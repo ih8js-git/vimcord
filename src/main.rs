@@ -8,16 +8,16 @@ use ratatui::{Terminal, prelude::CrosstermBackend};
 use reqwest::Client;
 use tokio::{
     sync::{
-        Mutex, MutexGuard,
-        mpsc::{self, Sender},
+        Mutex,
+        mpsc::{self},
     },
     task::JoinHandle,
     time::{self, Duration},
 };
 
 use crate::{
-    api::{create_message, get_channel_messages, get_current_user_guilds, get_guild_channels},
-    model::{Channel, Guild, Message},
+    api::{get_channel_messages, get_current_user_guilds},
+    model::{Channel, Emoji, Guild, Message},
     signals::{restore_terminal, setup_ctrlc_handler},
     ui::{draw_ui, handle_input_events, handle_keys_events},
 };
@@ -28,6 +28,19 @@ mod signals;
 mod ui;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
+
+const UNICODE_EMOJI_DICTIONARY: [(&str, &str); 10] = [
+    ("smile", "😊"),
+    ("laugh", "😂"),
+    ("love", "❤️"),
+    ("thumbsup", "👍"),
+    ("thumbsdown", "👎"),
+    ("star", "⭐"),
+    ("fire", "🔥"),
+    ("heart_eyes", "😍"),
+    ("sad", "😢"),
+    ("tada", "🎉"),
+];
 
 #[derive(Debug)]
 pub enum KeywordAction {
@@ -40,6 +53,7 @@ enum AppState {
     SelectingGuild,
     SelectingChannel(String),
     Chatting(String),
+    EmojiSelection(String),
 }
 
 #[derive(Debug)]
@@ -52,11 +66,13 @@ pub enum AppAction {
     SelectPrevious,
     ApiUpdateMessages(Vec<Message>),
     ApiUpdateChannel(Vec<Channel>),
+    ApiUpdateEmojis(Vec<Emoji>),
     #[allow(dead_code)]
     TransitionToChat(String),
     TransitionToChannels(String),
     #[allow(dead_code)]
     TransitionToGuilds,
+    SelectEmoji,
 }
 
 pub struct App {
@@ -64,156 +80,13 @@ pub struct App {
     guilds: Vec<Guild>,
     channels: Vec<Channel>,
     messages: Vec<Message>,
+    custom_emojis: Vec<Emoji>,
     input: String,
     selection_index: usize,
     status_message: String,
     terminal_height: usize,
     terminal_width: usize,
-}
-
-async fn input_submit(
-    state: &mut MutexGuard<'_, App>,
-    client: &Client,
-    token: String,
-    tx_action: &Sender<AppAction>,
-) -> bool {
-    match &state.state {
-        AppState::SelectingGuild => {
-            if state.guilds.is_empty() {
-                return true;
-            }
-
-            let selected_guild = &state.guilds[state.selection_index];
-            let guild_id_clone = selected_guild.id.clone();
-            let selected_guild_name = selected_guild.name.clone();
-
-            let client_clone = client.clone();
-            let token_clone = token.clone();
-            let tx_clone = tx_action.clone();
-
-            state.status_message = format!("Loading channels for {selected_guild_name}...");
-
-            tokio::spawn(async move {
-                match get_guild_channels(&client_clone, &token_clone, &guild_id_clone).await {
-                    Ok(channels) => {
-                        tx_clone
-                            .send(AppAction::ApiUpdateChannel(channels))
-                            .await
-                            .ok();
-                        tx_clone
-                            .send(AppAction::TransitionToChannels(guild_id_clone))
-                            .await
-                            .ok();
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to load channels: {e}");
-                    }
-                }
-            });
-        }
-        AppState::SelectingChannel(_) => {
-            let text_channels: Vec<&Channel> = state
-                .channels
-                .iter()
-                .filter(|c| c.channel_type != 4)
-                .collect();
-
-            if text_channels.is_empty() {
-                return true;
-            }
-
-            let channel_info = {
-                let selected_channel = &text_channels[state.selection_index];
-                (selected_channel.id.clone(), selected_channel.name.clone())
-            };
-            let (channel_id_clone, selected_channel_name) = channel_info;
-
-            state.state = AppState::Chatting(channel_id_clone.clone());
-            state.status_message = format!("Chatting in channel #{selected_channel_name}");
-            state.selection_index = 0;
-        }
-        AppState::Chatting(_) => {
-            let channel_id_clone = if let AppState::Chatting(id) = &state.state {
-                Some(id.clone())
-            } else {
-                None
-            };
-
-            let content = state.input.drain(..).collect::<String>();
-
-            let message_data = if content.is_empty() || channel_id_clone.is_none() {
-                None
-            } else {
-                channel_id_clone.map(|id| (id, content))
-            };
-
-            if let Some((channel_id_clone, content)) = message_data {
-                let client_clone = client.clone();
-                let token_clone = token.clone();
-
-                tokio::spawn(async move {
-                    match create_message(
-                        &client_clone,
-                        &channel_id_clone,
-                        &token_clone,
-                        Some(content),
-                        false,
-                    )
-                    .await
-                    {
-                        Ok(_) => {}
-                        Err(e) => {
-                            eprintln!("API Error: {e}");
-                        }
-                    }
-                });
-            }
-        }
-    }
-    false
-}
-
-async fn move_selection(state: &mut MutexGuard<'_, App>, n: i32) {
-    match state.state {
-        AppState::SelectingGuild => {
-            if !state.guilds.is_empty() {
-                if n < 0 {
-                    state.selection_index = if state.selection_index == 0 {
-                        state.guilds.len() - n.unsigned_abs() as usize
-                    } else {
-                        state.selection_index - n.unsigned_abs() as usize
-                    };
-                } else {
-                    state.selection_index =
-                        (state.selection_index + n.unsigned_abs() as usize) % state.guilds.len();
-                }
-            }
-        }
-        AppState::SelectingChannel(_) => {
-            if !state.channels.is_empty() {
-                if n < 0 {
-                    state.selection_index = if state.selection_index == 0 {
-                        state
-                            .channels
-                            .iter()
-                            .filter(|c| c.channel_type != 4)
-                            .count()
-                            - n.unsigned_abs() as usize
-                    } else {
-                        state.selection_index - n.unsigned_abs() as usize
-                    };
-                } else {
-                    state.selection_index = (state.selection_index + n.unsigned_abs() as usize)
-                        % state
-                            .channels
-                            .iter()
-                            .filter(|c| c.channel_type != 4)
-                            .count();
-                }
-            }
-        }
-        _ => {}
-    }
+    emoji_filter: String,
 }
 
 async fn run_app(token: String) -> Result<(), Error> {
@@ -230,11 +103,13 @@ async fn run_app(token: String) -> Result<(), Error> {
         guilds: Vec::new(),
         channels: Vec::new(),
         messages: Vec::new(),
+        custom_emojis: Vec::new(),
         input: String::new(),
         selection_index: 0,
         status_message: "Loading servers...".to_string(),
         terminal_height: 20,
         terminal_width: 80,
+        emoji_filter: String::new(),
     }));
 
     let (tx_action, mut rx_action) = mpsc::channel::<AppAction>(32);
@@ -330,7 +205,31 @@ async fn run_app(token: String) -> Result<(), Error> {
         if let Some(action) = rx_action.recv().await {
             let state = app_state.lock().await;
 
-            match handle_keys_events(state, action, &client, token.clone(), tx_action.clone()).await
+            let filtered_unicode: Vec<(&str, &str)> = UNICODE_EMOJI_DICTIONARY
+                .iter()
+                .filter(|(name, _)| name.starts_with(&state.emoji_filter))
+                .copied()
+                .collect();
+
+            let filtered_custom: Vec<&Emoji> = state
+                .custom_emojis
+                .iter()
+                .filter(|e| e.name.starts_with(&state.emoji_filter))
+                .collect();
+
+            let total_filtered_emojis = filtered_unicode.len() + filtered_custom.len();
+
+            match handle_keys_events(
+                app_state.lock().await,
+                action,
+                &client,
+                token.clone(),
+                tx_action.clone(),
+                filtered_unicode,
+                filtered_custom,
+                total_filtered_emojis,
+            )
+            .await
             {
                 Some(KeywordAction::Continue) => continue,
                 Some(KeywordAction::Break) => break,
@@ -341,9 +240,9 @@ async fn run_app(token: String) -> Result<(), Error> {
 
     drop(rx_action);
 
-    let _ = tx_shutdown.send(());
-
-    let _ = tokio::join!(input_handle, api_handle);
+    api_handle.abort();
+    input_handle.abort();
+    tx_shutdown.send(()).ok();
 
     Ok(())
 }
