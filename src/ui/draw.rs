@@ -1,10 +1,11 @@
 use ratatui::{
-    style::{Style, Stylize},
+    style::{Color, Style, Stylize},
+    text::Span,
     widgets::{List, ListItem, ListState},
 };
 use unicode_width::UnicodeWidthStr;
 
-use crate::{App, AppState, model::message::Message};
+use crate::{App, AppState, UNICODE_EMOJI_DICTIONARY, model::Message};
 
 pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
     use ratatui::layout::{Constraint, Direction, Layout};
@@ -68,7 +69,7 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
             let mut state = ListState::default().with_selected(Some(app.selection_index));
             f.render_stateful_widget(list, chunks[0], &mut state);
         }
-        AppState::Chatting(_) => {
+        AppState::Chatting(_) | AppState::EmojiSelection(_) => {
             if max_width == 0 {
                 return;
             }
@@ -160,12 +161,63 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
         }
     };
 
-    f.render_widget(
-        Paragraph::new(app.input.as_str()).block(
-            Block::default()
-                .title(format!("Input: {}", app.status_message))
-                .borders(Borders::ALL),
-        ),
-        chunks[1],
-    )
+    if let AppState::EmojiSelection(_) = &app.state {
+        let input_area = chunks[1];
+        let emoji_popup_height = 8;
+
+        let popup_rect = ratatui::layout::Rect {
+            x: input_area.x,
+            y: input_area.y.saturating_sub(emoji_popup_height + 1),
+            width: input_area.width.saturating_sub(5),
+            height: emoji_popup_height,
+        };
+
+        let mut filtered_items: Vec<ListItem> = Vec::new();
+
+        let filtered_unicode: Vec<(&str, &str)> = UNICODE_EMOJI_DICTIONARY
+            .iter()
+            .filter(|(name, _)| name.starts_with(&app.emoji_filter))
+            .copied()
+            .collect();
+
+        for (name, char) in filtered_unicode.iter() {
+            filtered_items.push(ListItem::new(Line::from(vec![
+                Span::styled(*char, Style::default().fg(Color::White)),
+                Span::raw(" "),
+                Span::styled(
+                    format!(":{name}: (Unicode)"),
+                    Style::default().fg(Color::LightBlue),
+                ),
+            ])));
+        }
+
+        if !filtered_items.is_empty() {
+            app.selection_index = app
+                .selection_index
+                .min(filtered_items.len().saturating_sub(1));
+
+            let emoji_list = List::new(filtered_items)
+                .block(Block::default().title("Select Emoji").borders(Borders::ALL))
+                .highlight_style(Style::default().reversed())
+                .highlight_symbol(">> ");
+
+            let mut state = ListState::default().with_selected(Some(app.selection_index));
+            f.render_stateful_widget(emoji_list, popup_rect, &mut state);
+        } else {
+            app.selection_index = 0;
+        }
+
+        f.render_widget(
+            Paragraph::new(app.input.as_str()).block(
+                Block::default()
+                    .title(format!("Input: {}", app.status_message))
+                    .borders(Borders::ALL),
+            ),
+            chunks[1],
+        );
+
+        let cursor_x = chunks[1].x + 1 + app.input.width() as u16;
+        let cursor_y = chunks[1].y + 1;
+        f.set_cursor_position((cursor_x, cursor_y));
+    }
 }
