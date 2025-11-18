@@ -10,7 +10,7 @@ use tokio::{
 use crate::{
     App, AppAction, AppState, KeywordAction, UNICODE_EMOJI_DICTIONARY,
     api::{create_message, get_channel, get_guild_channels, get_guild_emojis},
-    model::{Channel, Emoji},
+    model::{Channel, Emoji, Guild},
 };
 
 pub async fn handle_input_events(
@@ -69,11 +69,17 @@ async fn input_submit(
 ) -> bool {
     match &state.clone().state {
         AppState::SelectingGuild => {
-            if state.guilds.is_empty() {
+            let guilds: Vec<&Guild> = state
+                .guilds
+                .iter()
+                .filter(|g| g.name.to_lowercase().contains(&state.input))
+                .collect();
+
+            if guilds.is_empty() {
                 return true;
             }
 
-            let selected_guild = &state.guilds[state.selection_index];
+            let selected_guild = &guilds[state.selection_index];
             let guild_id_clone = selected_guild.id.clone();
             let selected_guild_name = selected_guild.name.clone();
 
@@ -115,7 +121,7 @@ async fn input_submit(
             let text_channels: Vec<&Channel> = state
                 .channels
                 .iter()
-                .filter(|c| c.channel_type != 4)
+                .filter(|c| c.channel_type != 4 && c.name.to_lowercase().contains(&state.input))
                 .collect();
 
             if text_channels.is_empty() {
