@@ -335,14 +335,13 @@ pub async fn handle_keys_events(
             }
         },
         AppAction::InputChar(c) => match &mut state.state {
-            AppState::Chatting(_) | AppState::SelectingGuild => {
-                state.input.push(c);
-            }
             AppState::EmojiSelection(_) => {
                 state.emoji_filter.push(c);
                 state.selection_index = 0;
             }
-            _ => {}
+            _ => {
+                state.input.push(c);
+            }
         },
         AppAction::SelectEmoji => {
             if let AppState::Chatting(channel_id) = &mut state.clone().state {
