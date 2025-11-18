@@ -25,8 +25,10 @@ pub async fn handle_input_events(
 
             _ = time::sleep(Duration::from_millis(50)) => {
                 if event::poll(Duration::from_millis(0))?
-                    && let event::Event::Key(key) = event::read()?
-                        && key.kind == KeyEventKind::Press {
+                    && let event::Event::Key(key) = event::read()? && key.kind == KeyEventKind::Press {
+                        if key.code == KeyCode::Char('c') && key.modifiers.contains(event::KeyModifiers::CONTROL) {
+                            tx.send(AppAction::SigInt).await.ok();
+                        } else {
                             match key.code {
                                 KeyCode::Esc => {
                                     tx.send(AppAction::InputEscape).await.ok();
@@ -52,6 +54,7 @@ pub async fn handle_input_events(
                                 _ => {}
                             }
                         }
+                    }
             }
         }
     }
@@ -300,10 +303,9 @@ pub async fn handle_keys_events(
     let total_filtered_emojis = filtered_unicode.len() + filtered_custom.len();
 
     match action {
+        AppAction::SigInt => return Some(KeywordAction::Break),
         AppAction::InputEscape => match &state.state {
-            AppState::SelectingGuild => {
-                return Some(KeywordAction::Break);
-            }
+            AppState::SelectingGuild => return Some(KeywordAction::Break),
             AppState::SelectingChannel(_) => {
                 state.input = String::new();
                 state.state = AppState::SelectingGuild;
