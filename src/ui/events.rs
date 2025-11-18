@@ -81,6 +81,7 @@ async fn input_submit(
             let token_clone = token.clone();
             let tx_clone = tx_action.clone();
 
+            state.input = String::new();
             state.status_message = format!("Loading channels for {selected_guild_name}...");
 
             tokio::spawn(async move {
@@ -127,6 +128,7 @@ async fn input_submit(
             };
             let (channel_id_clone, selected_channel_name) = channel_info;
 
+            state.input = String::new();
             state.state = AppState::Chatting(channel_id_clone.clone());
             state.status_message = format!("Chatting in channel #{selected_channel_name}");
             state.selection_index = 0;
@@ -298,6 +300,7 @@ pub async fn handle_keys_events(
                 return Some(KeywordAction::Break);
             }
             AppState::SelectingChannel(_) => {
+                state.input = String::new();
                 state.state = AppState::SelectingGuild;
                 state.status_message =
                     "Select a server. Use arrows to navigate, Enter to select & Esc to quit"
@@ -308,6 +311,9 @@ pub async fn handle_keys_events(
                 let channel = get_channel(client, &token, &channel_id.clone())
                     .await
                     .unwrap();
+
+                state.input = String::new();
+
                 match channel.guild_id {
                     Some(guild_id) => {
                         state.state = AppState::SelectingChannel(guild_id);
