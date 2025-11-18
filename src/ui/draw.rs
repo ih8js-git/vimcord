@@ -7,7 +7,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     App, AppState,
-    model::{Guild, Message},
+    model::{Emoji, Guild, Message},
 };
 
 pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
@@ -221,6 +221,12 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
             .filter(|(name, _)| name.starts_with(&app.emoji_filter))
             .collect();
 
+        let filtered_custom: Vec<&Emoji> = app_clone
+            .custom_emojis
+            .iter()
+            .filter(|e| e.name.starts_with(&app.emoji_filter))
+            .collect();
+
         for (name, char) in filtered_unicode.iter() {
             filtered_items.push(ListItem::new(Line::from(vec![
                 Span::styled(char.clone(), Style::default().fg(Color::White)),
@@ -230,6 +236,13 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
                     Style::default().fg(Color::LightBlue),
                 ),
             ])));
+        }
+
+        for emoji in filtered_custom.iter() {
+            filtered_items.push(ListItem::new(Line::from(vec![Span::styled(
+                format!("  :{}: (Guild)", emoji.name),
+                Style::default().fg(Color::LightBlue),
+            )])));
         }
 
         if !filtered_items.is_empty() {
