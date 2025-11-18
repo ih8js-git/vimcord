@@ -29,19 +29,6 @@ mod ui;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
 
-const UNICODE_EMOJI_DICTIONARY: [(&str, &str); 10] = [
-    ("smile", "😊"),
-    ("laugh", "😂"),
-    ("love", "❤️"),
-    ("thumbsup", "👍"),
-    ("thumbsdown", "👎"),
-    ("star", "⭐"),
-    ("fire", "🔥"),
-    ("heart_eyes", "😍"),
-    ("sad", "😢"),
-    ("tada", "🎉"),
-];
-
 #[derive(Debug)]
 pub enum KeywordAction {
     Continue,
@@ -87,7 +74,26 @@ pub struct App {
     status_message: String,
     terminal_height: usize,
     terminal_width: usize,
+    emoji_map: Vec<(String, String)>,
     emoji_filter: String,
+}
+
+impl App {
+    fn load_emoji_map(path: &str) -> Vec<(String, String)> {
+        match std::fs::read_to_string(path) {
+            Ok(file) => match serde_json::from_str::<Vec<(String, String)>>(&file) {
+                Ok(map) => map,
+                Err(e) => {
+                    eprintln!("Error parsing emojis dictionary: {e}");
+                    Vec::new()
+                }
+            },
+            Err(e) => {
+                eprintln!("Error reading emojis.json file: {e}");
+                Vec::new()
+            }
+        }
+    }
 }
 
 async fn run_app(token: String) -> Result<(), Error> {
@@ -110,6 +116,7 @@ async fn run_app(token: String) -> Result<(), Error> {
         status_message: "Loading servers...".to_string(),
         terminal_height: 20,
         terminal_width: 80,
+        emoji_map: App::load_emoji_map("emojis.json"),
         emoji_filter: String::new(),
     }));
 
