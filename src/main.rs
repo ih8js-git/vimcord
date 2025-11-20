@@ -36,13 +36,23 @@ pub enum KeywordAction {
 }
 
 #[derive(Debug, Clone)]
-enum AppState {
+pub enum Window {
+    Home,
+    Guild,
+    DM,
+    Channel(String),
+    Chat(String),
+}
+
+#[derive(Debug, Clone)]
+pub enum AppState {
     Home,
     SelectingGuild,
     SelectingDM,
     SelectingChannel(String),
     Chatting(String),
     EmojiSelection(String),
+    Loading(Window),
 }
 
 #[derive(Debug)]
@@ -64,7 +74,10 @@ pub enum AppAction {
     TransitionToGuilds,
     TransitionToDM,
     TransitionToHome,
+    TransitionToLoading(Window),
+    EndLoading,
     SelectEmoji,
+    Tick,
 }
 
 #[derive(Debug, Clone)]
@@ -83,6 +96,7 @@ pub struct App {
     terminal_width: usize,
     emoji_map: Vec<(String, String)>,
     emoji_filter: String,
+    tick_count: usize,
 }
 
 impl App {
@@ -112,7 +126,7 @@ async fn run_app(token: String) -> Result<(), Error> {
 
     let app_state = Arc::new(Mutex::new(App {
         api_client: ApiClient::new(Client::new(), token.clone(), DISCORD_BASE_URL.to_string()),
-        state: AppState::Home,
+        state: AppState::Loading(Window::Home),
         guilds: Vec::new(),
         channels: Vec::new(),
         messages: Vec::new(),
@@ -127,6 +141,7 @@ async fn run_app(token: String) -> Result<(), Error> {
         terminal_width: 80,
         emoji_map: App::load_emoji_map("emojis.json"),
         emoji_filter: String::new(),
+        tick_count: 0,
     }));
 
     let (tx_action, mut rx_action) = mpsc::channel::<AppAction>(32);
@@ -134,6 +149,26 @@ async fn run_app(token: String) -> Result<(), Error> {
 
     let tx_input = tx_action.clone();
     let rx_shutdown_input = tx_shutdown.subscribe();
+
+    let mut rx_shutdown_ticker = tx_shutdown.subscribe();
+    let tx_ticker = tx_action.clone();
+
+    let ticker_handle: JoinHandle<()> = tokio::spawn(async move {
+        let mut interval = time::interval(Duration::from_millis(100)); // 10 ticks per second for smooth animation
+        loop {
+            tokio::select! {
+                _ = rx_shutdown_ticker.recv() => {
+                    return;
+                }
+                _ = interval.tick() => {
+                    if let Err(e) = tx_ticker.send(AppAction::Tick).await {
+                        eprintln!("Failed to send tick action: {e}");
+                        return;
+                    }
+                }
+            }
+        }
+    });
 
     let input_handle: JoinHandle<Result<(), io::Error>> = tokio::spawn(async move {
         let res = handle_input_events(tx_input, rx_shutdown_input).await;
@@ -179,6 +214,8 @@ async fn run_app(token: String) -> Result<(), Error> {
                 state.status_message = format!("Failed to load DMs. {e}");
             }
         }
+
+        tx_api.send(AppAction::EndLoading).await.ok();
 
         loop {
             tokio::select! {
@@ -247,7 +284,7 @@ async fn run_app(token: String) -> Result<(), Error> {
 
     let _ = tx_shutdown.send(());
 
-    let _ = tokio::join!(input_handle, api_handle);
+    let _ = tokio::join!(input_handle, api_handle, ticker_handle);
 
     Ok(())
 }
