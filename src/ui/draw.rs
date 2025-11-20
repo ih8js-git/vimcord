@@ -1,7 +1,7 @@
 use ratatui::{
     style::{Color, Style, Stylize},
     text::Span,
-    widgets::{Clear, List, ListItem, ListState},
+    widgets::{BorderType, Clear, List, ListItem, ListState},
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -29,6 +29,40 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
     let max_width = app.terminal_width.saturating_sub(2) as u16;
 
     match &app.state {
+        AppState::Loading(_) => {
+            let loading_area = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Percentage(40),
+                    Constraint::Length(3),
+                    Constraint::Min(0),
+                ])
+                .split(chunks[0])[1];
+
+            let spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+            let symbol = spinner[app.tick_count % spinner.len()];
+
+            let loading_text = Line::from(vec![
+                Span::styled("Loading", Style::default().fg(Color::LightCyan)),
+                Span::raw(" "),
+                Span::styled(symbol, Style::default().fg(Color::LightCyan)),
+            ]);
+
+            let loading_paragraph = Paragraph::new(Text::from(vec![loading_text]))
+                .alignment(ratatui::layout::Alignment::Center)
+                .block(
+                    Block::default()
+                        .title(Span::styled(
+                            "Rivet Client",
+                            Style::default().fg(Color::Yellow),
+                        ))
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Double),
+                );
+
+            f.render_widget(Clear, chunks[0]);
+            f.render_widget(loading_paragraph, loading_area);
+        }
         AppState::Home => {
             let options = [
                 ("Guilds", Color::LightMagenta),
