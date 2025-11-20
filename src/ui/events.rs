@@ -7,7 +7,7 @@ use tokio::{
 };
 
 use crate::{
-    App, AppAction, AppState, KeywordAction,
+    App, AppAction, AppState, KeywordAction, Window,
     api::{Channel, DM, Emoji, Guild},
 };
 
@@ -66,6 +66,7 @@ async fn input_submit(
     total_filtered_emojis: usize,
 ) -> Option<KeywordAction> {
     match &state.clone().state {
+        AppState::Loading(_) => {}
         AppState::Home => match state.selection_index {
             0 => {
                 tx_action.send(AppAction::TransitionToGuilds).await.ok();
@@ -123,6 +124,12 @@ async fn input_submit(
             let api_client_clone = state.api_client.clone();
 
             tokio::spawn(async move {
+                tx_clone
+                    .send(AppAction::TransitionToLoading(Window::Channel(
+                        guild_id_clone.clone(),
+                    )))
+                    .await
+                    .ok();
                 match api_client_clone.get_guild_channels(&guild_id_clone).await {
                     Ok(channels) => {
                         tx_clone
@@ -143,10 +150,7 @@ async fn input_submit(
                     }
                 }
 
-                tx_clone
-                    .send(AppAction::TransitionToChannels(guild_id_clone))
-                    .await
-                    .ok();
+                tx_clone.send(AppAction::EndLoading).await.ok();
             });
         }
         AppState::SelectingChannel(_) => {
@@ -166,13 +170,33 @@ async fn input_submit(
             };
             let (channel_id_clone, selected_channel_name) = channel_info;
 
+            tx_action
+                .send(AppAction::TransitionToLoading(Window::Chat(
+                    channel_id_clone.clone(),
+                )))
+                .await
+                .ok();
+
             state.input = String::new();
             state.status_message = format!("Loading messages for {selected_channel_name}...");
 
-            tx_action
-                .send(AppAction::TransitionToChat(channel_id_clone))
+            match state
+                .api_client
+                .get_channel_messages(&channel_id_clone, None, None, None, Some(100))
                 .await
-                .ok();
+            {
+                Ok(messages) => {
+                    if let Err(e) = tx_action.send(AppAction::ApiUpdateMessages(messages)).await {
+                        eprintln!("Failed to send message update action: {e}");
+                        return None;
+                    }
+                }
+                Err(e) => {
+                    state.status_message = format!("Error loading chat: {e}");
+                }
+            }
+
+            tx_action.send(AppAction::EndLoading).await.ok();
         }
         AppState::EmojiSelection(channel_id) => {
             if state.selection_index < filtered_unicode.len() {
@@ -356,7 +380,7 @@ pub async fn handle_keys_events(
     match action {
         AppAction::SigInt => return Some(KeywordAction::Break),
         AppAction::InputEscape => match &state.state {
-            AppState::Home => return Some(KeywordAction::Break),
+            AppState::Home | AppState::Loading(_) => return Some(KeywordAction::Break),
             AppState::SelectingDM => {
                 tx_action.send(AppAction::TransitionToHome).await.ok();
             }
@@ -535,6 +559,31 @@ pub async fn handle_keys_events(
             state.state = AppState::Home;
             state.status_message = "Browse either DMs or Servers. Use arrows to navigate, Enter to select & Esc to quit".to_string();
             state.selection_index = 0;
+        }
+        AppAction::TransitionToLoading(redirect_state) => {
+            state.state = AppState::Loading(redirect_state);
+            state.status_message = "Loading...".to_string();
+        }
+        AppAction::EndLoading => {
+            if let AppState::Loading(redirect) = &state.clone().state {
+                match redirect {
+                    Window::Home => tx_action.send(AppAction::TransitionToHome).await.ok(),
+                    Window::Guild => tx_action.send(AppAction::TransitionToGuilds).await.ok(),
+                    Window::DM => tx_action.send(AppAction::TransitionToDM).await.ok(),
+                    Window::Channel(guild_id) => tx_action
+                        .send(AppAction::TransitionToChannels(guild_id.clone()))
+                        .await
+                        .ok(),
+                    Window::Chat(channel_id) => tx_action
+                        .send(AppAction::TransitionToChat(channel_id.clone()))
+                        .await
+                        .ok(),
+                };
+            }
+        }
+        AppAction::Tick => {
+            state.tick_count = state.tick_count.wrapping_add(1);
+            return Some(KeywordAction::Continue);
         }
     }
 
