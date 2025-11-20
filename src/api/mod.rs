@@ -5,13 +5,14 @@ pub mod guild;
 pub mod message;
 pub mod user;
 
-use reqwest::{Client, Response};
+use reqwest::{Client, Method};
 
 pub use channel::Channel;
 pub use dm::DM;
 pub use emoji::Emoji;
 pub use guild::Guild;
 pub use message::Message;
+use serde::de::DeserializeOwned;
 pub use user::User;
 
 use crate::Error;
@@ -32,20 +33,62 @@ impl ApiClient {
         }
     }
 
+    async fn api_request<T: DeserializeOwned>(
+        &self,
+        endpoint: &str,
+        method: Method,
+        body: Option<serde_json::Value>,
+    ) -> Result<T, Error> {
+        let url = format!("{}/{}", self.base_url, endpoint);
+        let mut request = self
+            .http_client
+            .request(method, &url)
+            .header("Authorization", self.auth_token.as_str());
+
+        if let Some(data) = body {
+            request = request.json(&data);
+        }
+
+        let response = request.send().await?;
+        let status = response.status();
+
+        if status.is_success() {
+            Ok(response.json::<T>().await?)
+        } else {
+            let body = response
+                .text()
+                .await
+                .unwrap_or("Failed to read error body".to_string());
+            Err(format!("API Error: Status {status}. Details: {body}").into())
+        }
+    }
+
     pub async fn get_channel(&self, channel_id: &str) -> Result<Channel, Error> {
-        Channel::from_id(self, channel_id).await
+        self.api_request(format!("channels/{channel_id}").as_str(), Method::GET, None)
+            .await
     }
 
     pub async fn get_dms(&self) -> Result<Vec<DM>, Error> {
-        DM::from_user(self).await
+        self.api_request("users/@me/channels", Method::GET, None)
+            .await
     }
 
     pub async fn get_guild_emojis(&self, guild_id: &str) -> Result<Vec<Emoji>, Error> {
-        Emoji::from_guild(self, guild_id).await
+        self.api_request(
+            format!("guilds/{guild_id}/emojis").as_str(),
+            Method::GET,
+            None,
+        )
+        .await
     }
 
     pub async fn get_guild_channels(&self, guild_id: &str) -> Result<Vec<Channel>, Error> {
-        Guild::get_channels(self, guild_id).await
+        self.api_request(
+            format!("guilds/{guild_id}/channels").as_str(),
+            Method::GET,
+            None,
+        )
+        .await
     }
 
     pub async fn create_message(
@@ -53,8 +96,13 @@ impl ApiClient {
         channel_id: &str,
         content: Option<String>,
         tts: bool,
-    ) -> Result<Response, Error> {
-        Message::send(self, channel_id, content, tts).await
+    ) -> Result<Message, Error> {
+        self.api_request(
+            format!("channels/{channel_id}/messages").as_str(),
+            Method::POST,
+            Some(serde_json::json!({ "content": content, "tts": tts })),
+        )
+        .await
     }
 
     pub async fn get_channel_messages(
@@ -65,10 +113,32 @@ impl ApiClient {
         after: Option<String>,
         limit: Option<usize>,
     ) -> Result<Vec<Message>, Error> {
-        Message::from_channel(self, channel_id, around, before, after, limit).await
+        let mut endpoint = format!("channels/{channel_id}/messages");
+        let mut query = Vec::new();
+
+        if let Some(a) = around {
+            query.push(format!("around={a}"));
+        }
+        if let Some(b) = before {
+            query.push(format!("before={b}"));
+        }
+        if let Some(a) = after {
+            query.push(format!("after={a}"));
+        }
+        if let Some(l) = limit {
+            query.push(format!("limit={l}"));
+        }
+
+        if !query.is_empty() {
+            endpoint.push('?');
+            endpoint.push_str(&query.join("&"));
+        }
+
+        self.api_request(&endpoint, Method::GET, None).await
     }
 
     pub async fn get_current_user_guilds(&self) -> Result<Vec<Guild>, Error> {
-        User::get_guilds(self).await
+        self.api_request("/users/@me/guilds", Method::GET, None)
+            .await
     }
 }
