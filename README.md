@@ -46,7 +46,7 @@ The developers, contributors, and maintainers of this repository disclaim all li
 ### Dependencies
 
 > [!IMPORTANT]
-> Make sure to have [Rust](https://www.rust-lang.org/tools/install) installed.
+> Make sure to have [Rust](https://www.rust-lang.org/tools/install) installed & [NerdFonts](https://www.nerdfonts.com/) (for icons).
 
 ### Compilation
 
