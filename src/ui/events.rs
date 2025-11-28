@@ -169,7 +169,9 @@ async fn input_submit(
         }
         AppState::SelectingChannel(_) => {
             let permission_context = &state.context;
-            let text_channels: Vec<&Channel> = state
+            let mut text_channels: Vec<&Channel> = Vec::new();
+
+            state
                 .channels
                 .iter()
                 .filter(|c| {
@@ -179,9 +181,32 @@ async fn input_submit(
                     }
                     readable && c.name.to_lowercase().contains(&state.input.to_lowercase())
                 })
-                .collect();
+                .for_each(|c| {
+                    if let Some(children) = &c.children {
+                        text_channels.push(c);
 
-            if text_channels.is_empty() {
+                        children
+                            .iter()
+                            .filter(|c| {
+                                let mut readable = false;
+                                if let Some(context) = &permission_context {
+                                    readable = c.is_readable(context)
+                                }
+                                readable
+                                    && c.name.to_lowercase().contains(&state.input.to_lowercase())
+                            })
+                            .for_each(|c| {
+                                text_channels.push(c);
+                            });
+                    } else {
+                        text_channels.push(c);
+                    }
+                });
+
+            if text_channels.is_empty()
+                || text_channels.len() <= state.selection_index
+                || text_channels[state.selection_index].channel_type == 4
+            {
                 return Some(KeywordAction::Continue);
             }
 
@@ -341,7 +366,9 @@ async fn move_selection(state: &mut MutexGuard<'_, App>, n: i32, total_filtered_
             if !state.channels.is_empty() {
                 let permission_context = &state.context;
 
-                let len = state
+                let mut len = 0;
+
+                state
                     .channels
                     .iter()
                     .filter(|c| {
@@ -351,7 +378,14 @@ async fn move_selection(state: &mut MutexGuard<'_, App>, n: i32, total_filtered_
                         }
                         readable && c.name.to_lowercase().contains(&state.input.to_lowercase())
                     })
-                    .count();
+                    .for_each(|c| {
+                        len += 1;
+                        if let Some(children) = &c.children {
+                            children.iter().for_each(|_| len += 1);
+                        }
+                    });
+
+                len -= 1;
 
                 if n < 0 {
                     state.selection_index = if state.selection_index == 0 {
@@ -518,7 +552,8 @@ pub async fn handle_keys_events(
                     .to_string();
         }
         AppAction::ApiUpdateChannel(new_channels) => {
-            state.channels = new_channels;
+            state.channels =
+                Channel::filter_channels_by_categories(new_channels).unwrap_or_default();
             let text_channels_count = state.channels.len();
             if text_channels_count > 0 {
                 state.status_message =
