@@ -14,7 +14,7 @@ on:
       - main
 
 jobs:
-  discord-ci:
+  ci:
     name: Rust CI
     runs-on: ubuntu-latest
     defaults:
@@ -64,6 +64,7 @@ jobs:
     name: Publishing to Cargo
     runs-on: ubuntu-22.04
     if: startsWith(github.ref, 'refs/tags/')
+    needs: [ci]
 
     steps:
       - name: Checkout repository
