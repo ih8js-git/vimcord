@@ -225,10 +225,16 @@ jobs:
 
           sed -i "s/^sha256sums=.*/sha256sums=('SKIP')/" PKGBUILD
 
+      - name: Regenerate .SRCINFO
+        run: |
+          cd rivetui
+          makepkg --printsrcinfo > .SRCINFO
+        shell: bash
+
       - name: Commit and Push to AUR
         run: |
           cd rivetui
 
-          git add PKGBUILD
+          git add PKGBUILD .SRCINFO
           git commit -m "Update rivetui to version ${{ steps.version_extract.outputs.VERSION }}"
           git push
