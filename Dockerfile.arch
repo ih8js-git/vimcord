@@ -3,7 +3,7 @@ FROM archlinux/archlinux:latest
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PACMAN_KEY_INIT=true
 
-RUN pacman-Syu --noconfirm && \
+RUN pacman -Syu --noconfirm && \
   pacman -S base-devel rust --noconfirm
 
 RUN useradd -m builder
