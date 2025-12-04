@@ -289,7 +289,8 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
             }
 
             let title = format!(
-                "Channels for Guild: {guild_id} | Channels found: {num_filtered} | Actual index: {}",
+                "Channels for Guild: {guild_id} | Channels found: {} | Actual index: {}",
+                num_filtered.saturating_sub(1),
                 app.selection_index
             );
 
