@@ -30,6 +30,9 @@ jobs:
         run: ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
         shell: bash
 
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Extract Git Tag version
         id: version_extract
         run: |
