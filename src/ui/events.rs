@@ -364,40 +364,51 @@ async fn move_selection(state: &mut MutexGuard<'_, App>, n: i32, total_filtered_
         }
         AppState::SelectingChannel(_) => {
             if !state.channels.is_empty() {
+                let filter_text = state.input.to_lowercase();
                 let permission_context = &state.context;
 
-                let mut len = 0;
+                let should_display_content = |c: &Channel| {
+                    let is_readable = permission_context
+                        .as_ref()
+                        .is_some_and(|context| c.is_readable(context));
 
-                state
+                    is_readable
+                        && (filter_text.is_empty() || c.name.to_lowercase().contains(&filter_text))
+                };
+
+                let len: usize = state
                     .channels
                     .iter()
-                    .filter(|c| {
-                        let mut readable = false;
-                        if let Some(context) = &permission_context {
-                            readable = c.is_readable(context)
+                    .flat_map(|c| {
+                        if c.channel_type == 4 {
+                            let mut list_items_to_render: Vec<&Channel> = Vec::new();
+
+                            let name_matches = filter_text.is_empty()
+                                || c.name.to_lowercase().contains(&filter_text);
+
+                            let child_matches = c.children.as_ref().is_some_and(|children| {
+                                children.iter().any(should_display_content)
+                            });
+
+                            if name_matches || child_matches {
+                                list_items_to_render.push(c);
+
+                                if let Some(children) = &c.children {
+                                    list_items_to_render.extend(
+                                        children
+                                            .iter()
+                                            .filter(|child| should_display_content(child)),
+                                    );
+                                }
+                            }
+                            list_items_to_render
+                        } else if should_display_content(c) {
+                            vec![c]
+                        } else {
+                            vec![]
                         }
-                        readable && c.name.to_lowercase().contains(&state.input.to_lowercase())
                     })
-                    .for_each(|c| {
-                        len += 1;
-                        if let Some(children) = &c.children {
-                            children
-                                .iter()
-                                .filter(|c| {
-                                    let mut readable = false;
-                                    if let Some(context) = &permission_context {
-                                        readable = c.is_readable(context)
-                                    }
-                                    readable
-                                        && c.name
-                                            .to_lowercase()
-                                            .contains(&state.input.to_lowercase())
-                                })
-                                .for_each(|_| {
-                                    len += 1;
-                                });
-                        }
-                    });
+                    .count();
 
                 if n < 0 {
                     state.selection_index = if state.selection_index == 0 {
