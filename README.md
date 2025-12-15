@@ -19,6 +19,8 @@
 
 # Rivet
 
+<img src="./readme/Rivet.png" alt="Chat Exemple">
+
 ## Table of Content
 
 - [About](#about)
