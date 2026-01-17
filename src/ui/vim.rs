@@ -61,87 +61,109 @@ fn get_motion_range(state: &MutexGuard<'_, App>, motion: VimMotion) -> (usize, u
     let end = match motion {
         VimMotion::WordForward => {
             let mut pos = start;
-            if pos < len {
-                // If on a space, skip spaces
-                while pos < len {
-                    let c = input[pos..].chars().next().unwrap();
-                    if c.is_whitespace() {
-                        pos += c.len_utf8();
-                    } else {
-                        break;
-                    }
+            // Skip leading spaces
+            while let Some(c) = input[pos..].chars().next() {
+                if c.is_whitespace() {
+                    pos += c.len_utf8();
+                } else {
+                    break;
                 }
-                // Skip current word
-                while pos < len {
-                    let c = input[pos..].chars().next().unwrap();
-                    if !c.is_whitespace() {
-                        pos += c.len_utf8();
-                    } else {
-                        break;
-                    }
+            }
+            // Skip current word
+            while let Some(c) = input[pos..].chars().next() {
+                if !c.is_whitespace() {
+                    pos += c.len_utf8();
+                } else {
+                    break;
                 }
-                // Skip spaces to next word
-                while pos < len {
-                    let c = input[pos..].chars().next().unwrap();
-                    if c.is_whitespace() {
-                        pos += c.len_utf8();
-                    } else {
-                        break;
-                    }
+            }
+            // Skip spaces to next word
+            while let Some(c) = input[pos..].chars().next() {
+                if c.is_whitespace() {
+                    pos += c.len_utf8();
+                } else {
+                    break;
                 }
             }
             pos.min(len)
         }
         VimMotion::WordBackward => {
             let mut pos = start;
-            if pos > 0 {
-                let c = input[..pos].chars().next_back().unwrap();
-                pos -= c.len_utf8();
-                // Skip spaces backwards
-                while pos > 0 {
-                    let c = input[..pos].chars().next_back().unwrap();
-                    if c.is_whitespace() {
-                        pos -= c.len_utf8();
-                    } else {
-                        break;
+            if pos == 0 {
+                return (start, 0);
+            }
+
+            // First, check what character is immediately before the cursor
+            let prev_char = input[..pos].chars().next_back();
+
+            if let Some(c) = prev_char {
+                if c.is_whitespace() {
+                    // We're after whitespace - skip all whitespace backwards
+                    while let Some(c) = input[..pos].chars().next_back() {
+                        if c.is_whitespace() {
+                            pos -= c.len_utf8();
+                        } else {
+                            break;
+                        }
                     }
-                }
-                // Skip word backwards
-                while pos > 0 {
-                    let c = input[..pos].chars().next_back().unwrap();
-                    if !c.is_whitespace() {
-                        pos -= c.len_utf8();
+                    // Now skip the word backwards to find its beginning
+                    while let Some(c) = input[..pos].chars().next_back() {
+                        if !c.is_whitespace() {
+                            pos -= c.len_utf8();
+                        } else {
+                            break;
+                        }
+                    }
+                } else {
+                    // We're after a word character - check if we're at the start of a word
+                    // by looking at the character before that
+                    let two_back = if pos >= c.len_utf8() {
+                        input[..pos - c.len_utf8()].chars().next_back()
                     } else {
-                        break;
+                        None
+                    };
+
+                    if two_back.is_none() || two_back.is_some_and(|c2| c2.is_whitespace()) {
+                        // At start of word - move to previous word
+                        pos -= c.len_utf8(); // Move past the first char of current word
+                        // Skip whitespace backwards
+                        while let Some(c) = input[..pos].chars().next_back() {
+                            if c.is_whitespace() {
+                                pos -= c.len_utf8();
+                            } else {
+                                break;
+                            }
+                        }
+                        // Skip the previous word backwards
+                        while let Some(c) = input[..pos].chars().next_back() {
+                            if !c.is_whitespace() {
+                                pos -= c.len_utf8();
+                            } else {
+                                break;
+                            }
+                        }
+                    } else {
+                        // In middle of word - go to start of current word
+                        while let Some(c) = input[..pos].chars().next_back() {
+                            if !c.is_whitespace() {
+                                pos -= c.len_utf8();
+                            } else {
+                                break;
+                            }
+                        }
                     }
                 }
             }
             pos
         }
         VimMotion::Line => len, // Special case, usually handled by operator logic
-        VimMotion::CharRight => {
-            if start < len {
-                start
-                    + input[start..]
-                        .chars()
-                        .next()
-                        .map(|c| c.len_utf8())
-                        .unwrap_or(0)
-            } else {
-                len
-            }
-        }
+        VimMotion::CharRight => start + input[start..].chars().next().map_or(0, |c| c.len_utf8()),
         VimMotion::CharLeft => {
-            if start > 0 {
-                start
-                    - input[..start]
-                        .chars()
-                        .next_back()
-                        .map(|c| c.len_utf8())
-                        .unwrap_or(0)
-            } else {
-                0
-            }
+            start
+                - input[..start]
+                    .chars()
+                    .next_back()
+                    .map_or(0, |c| c.len_utf8())
         }
         VimMotion::StartOfLine => 0,
         VimMotion::EndOfLine => len,
@@ -212,8 +234,7 @@ pub async fn handle_vim_keys(
             state.mode = InputMode::Insert;
         }
         'a' => {
-            if state.cursor_position < state.input.len() {
-                let c = state.input[state.cursor_position..].chars().next().unwrap();
+            if let Some(c) = state.input[state.cursor_position..].chars().next() {
                 state.cursor_position += c.len_utf8();
             }
             state.mode = InputMode::Insert;
@@ -229,19 +250,14 @@ pub async fn handle_vim_keys(
             tx_action.send(AppAction::SelectPrevious).await.ok();
         }
         'h' => {
-            if state.cursor_position > 0 {
-                let c = state.input[..state.cursor_position]
-                    .chars()
-                    .next_back()
-                    .unwrap();
+            if let Some(c) = state.input[..state.cursor_position].chars().next_back() {
                 state.cursor_position -= c.len_utf8();
             }
         }
         'l' => {
-            if state.cursor_position < state.input.len() {
-                let c = state.input[state.cursor_position..].chars().next().unwrap();
+            if let Some(c) = state.input[state.cursor_position..].chars().next() {
                 let next_pos = state.cursor_position + c.len_utf8();
-                if next_pos < state.input.len() {
+                if next_pos <= state.input.len() {
                     state.cursor_position = next_pos;
                 }
             }

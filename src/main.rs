@@ -107,6 +107,8 @@ pub struct App {
     terminal_width: usize,
     emoji_map: Vec<(String, String)>,
     emoji_filter: String,
+    /// Byte position where the emoji filter started (position of the ':')
+    emoji_filter_start: Option<usize>,
     tick_count: usize,
     context: Option<PermissionContext>,
     mode: InputMode,
@@ -200,6 +202,7 @@ async fn run_app(token: String, vim_mode: bool) -> Result<(), Error> {
         terminal_width: 80,
         emoji_map: App::load_emoji_map(),
         emoji_filter: String::new(),
+        emoji_filter_start: None,
         tick_count: 0,
         context: None,
         mode: InputMode::Normal,
