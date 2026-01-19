@@ -334,11 +334,18 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
                     message
                         .timestamp
                         .split('T')
-                        .nth(1)
-                        .unwrap_or("")
-                        .split('.')
                         .next()
-                        .unwrap_or(""),
+                        .unwrap_or("")
+                        .to_string()
+                        + " "
+                        + message
+                            .timestamp
+                            .split('T')
+                            .nth(1)
+                            .unwrap_or("")
+                            .split('.')
+                            .next()
+                            .unwrap_or(""),
                     message.author.username,
                     message.content.as_deref().unwrap_or("(*non-text*)")
                 );
@@ -346,26 +353,54 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
                 let text_lines: Vec<&str> = formatted_text.split('\n').collect();
                 let mut estimated_height = 0;
 
+                let safe_max_width = max_width.saturating_sub(4);
                 for line in text_lines {
-                    let width = UnicodeWidthStr::width(line) as u16;
+                    let width = UnicodeWidthStr::width(line);
 
-                    if width == 0 || max_width == 0 {
+                    if width == 0 || safe_max_width == 0 {
                         estimated_height += 1;
                         continue;
                     }
 
-                    let wrap_lines = (width as usize).div_ceil(max_width as usize);
+                    let mut current_line_width = 0;
+                    let mut first_word = true;
 
-                    estimated_height += wrap_lines;
+                    for word in line.split(' ') {
+                        let word_width = UnicodeWidthStr::width(word);
+                        let space_width = if first_word { 0 } else { 1 };
+
+                        if current_line_width + space_width + word_width <= safe_max_width as usize
+                        {
+                            current_line_width += space_width + word_width;
+                        } else {
+                            if current_line_width > 0 {
+                                estimated_height += 1;
+                            }
+
+                            if word_width > safe_max_width as usize {
+                                let chunks = word_width.div_ceil(safe_max_width as usize);
+                                estimated_height += chunks.saturating_sub(1);
+                                current_line_width = word_width % safe_max_width as usize;
+                                if current_line_width == 0 {
+                                    current_line_width = safe_max_width as usize;
+                                }
+                            } else {
+                                current_line_width = word_width;
+                            }
+                        }
+                        first_word = false;
+                    }
+                    if current_line_width > 0 {
+                        estimated_height += 1;
+                    }
                 }
-
-                if current_height + estimated_height > max_height {
-                    break;
-                }
-
-                current_height += estimated_height;
 
                 messages_to_render.push(message.clone());
+                current_height += estimated_height;
+
+                if current_height >= max_height {
+                    break;
+                }
             }
 
             messages_to_render.reverse();
@@ -373,8 +408,6 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
             let mut final_content: Vec<Line> = Vec::new();
 
             for message in messages_to_render.into_iter() {
-                let mut lines = vec![];
-
                 let formatted_time = format!(
                     " {}]",
                     message
@@ -401,21 +434,40 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
                     .clone()
                     .unwrap_or("(*non-text*)".to_string());
 
-                lines.push(Line::from(vec![
-                    Span::styled("[".to_string(), Style::default().fg(Color::LightBlue)),
-                    Span::styled(formatted_date, Style::default().fg(Color::LightCyan)),
-                    Span::styled(formatted_time, Style::default().fg(Color::LightBlue)),
-                    Span::styled(author, Style::default().fg(Color::Yellow)),
-                    Span::styled(content, Style::default().fg(Color::White)),
-                ]));
+                let content_lines: Vec<&str> = content.split('\n').collect();
 
-                let text = Text::from(lines);
+                for (i, line_content) in content_lines.iter().enumerate() {
+                    let mut spans = vec![];
 
-                final_content.extend(text.lines);
+                    if i == 0 {
+                        spans.push(Span::styled(
+                            "[".to_string(),
+                            Style::default().fg(Color::LightBlue),
+                        ));
+                        spans.push(Span::styled(
+                            formatted_date.clone(),
+                            Style::default().fg(Color::LightCyan),
+                        ));
+                        spans.push(Span::styled(
+                            formatted_time.clone(),
+                            Style::default().fg(Color::LightBlue),
+                        ));
+                        spans.push(Span::styled(
+                            author.clone(),
+                            Style::default().fg(Color::Yellow),
+                        ));
+                    }
+
+                    spans.push(Span::styled(
+                        line_content.to_string(),
+                        Style::default().fg(Color::White),
+                    ));
+                    final_content.push(Line::from(spans));
+                }
             }
 
-            let scroll_offset = if final_content.len() > max_height {
-                final_content.len().saturating_sub(max_height)
+            let scroll_offset = if current_height > max_height {
+                current_height.saturating_sub(max_height)
             } else {
                 0
             };
