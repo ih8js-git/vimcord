@@ -71,7 +71,7 @@ pub async fn handle_input_events(
                 return Ok(());
             }
 
-            _ = time::sleep(Duration::from_millis(50)) => {
+            _ = time::sleep(Duration::from_millis(10)) => {
                 if event::poll(Duration::from_millis(0))? {
                     match event::read()? {
                         event::Event::Key(key) => {
