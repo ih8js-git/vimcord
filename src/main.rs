@@ -117,12 +117,14 @@ pub struct App {
     vim_state: Option<VimState>,
 }
 
-async fn run_app(token: String, vim_mode: bool) -> Result<(), Error> {
+async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableBracketedPaste)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
+
+    let vim_mode = config.vim_mode || env::args().any(|arg| arg == "--vim");
 
     let app_state = Arc::new(Mutex::new(App {
         api_client: ApiClient::new(Client::new(), token.clone(), DISCORD_BASE_URL.to_string()),
@@ -139,7 +141,7 @@ async fn run_app(token: String, vim_mode: bool) -> Result<(), Error> {
                 .to_string(),
         terminal_height: 20,
         terminal_width: 80,
-        emoji_map: config::load_emoji_map(),
+        emoji_map: config.emoji_map,
         emoji_filter: String::new(),
         emoji_filter_start: None,
         tick_count: 0,
@@ -324,9 +326,9 @@ async fn main() -> Result<(), Error> {
 
     setup_ctrlc_handler();
 
-    let vim_mode = env::args().any(|arg| arg == "--vim");
+    let config = config::load_config();
 
-    if let Err(e) = run_app(token, vim_mode).await {
+    if let Err(e) = run_app(token, config).await {
         restore_terminal();
         return Err(e);
     }
