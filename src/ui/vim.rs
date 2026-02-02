@@ -325,6 +325,11 @@ pub async fn handle_vim_keys(
                             current_width += w;
                             target_offset += c.len_utf8();
                         }
+                        if target_offset == next_line_str.len() && target_offset > 0 {
+                            if let Some(last_char) = next_line_str.chars().next_back() {
+                                target_offset -= last_char.len_utf8();
+                            }
+                        }
                         state.cursor_position = next_line_start + target_offset;
                         clamp_cursor(&mut state);
                     }
@@ -363,6 +368,11 @@ pub async fn handle_vim_keys(
                         }
                         current_width += w;
                         target_offset += c.len_utf8();
+                    }
+                    if target_offset == prev_line_str.len() && target_offset > 0 {
+                        if let Some(last_char) = prev_line_str.chars().next_back() {
+                            target_offset -= last_char.len_utf8();
+                        }
                     }
                     state.cursor_position = prev_line_start + target_offset;
                     clamp_cursor(&mut state);
