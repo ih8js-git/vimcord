@@ -383,14 +383,60 @@ pub async fn handle_vim_keys(
         }
         'h' => {
             if let Some(c) = state.input[..state.cursor_position].chars().next_back() {
-                state.cursor_position -= c.len_utf8();
+                use std::io::Write;
+                if let Ok(mut file) = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open("vim_debug.log")
+                {
+                    let _ = writeln!(
+                        file,
+                        "h pressed. pos={}, prev_char={:?} (0x{:x}, is_control={})",
+                        state.cursor_position,
+                        c,
+                        c as u32,
+                        c.is_control()
+                    );
+                }
+
+                if !c.is_control() || c == '\t' {
+                    state.cursor_position -= c.len_utf8();
+                }
             }
         }
         'l' => {
             if let Some(c) = state.input[state.cursor_position..].chars().next() {
-                let next_pos = state.cursor_position + c.len_utf8();
-                if next_pos < state.input.len() {
-                    state.cursor_position = next_pos;
+                use std::io::Write;
+                if let Ok(mut file) = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open("vim_debug.log")
+                {
+                    let _ = writeln!(
+                        file,
+                        "l pressed. pos={}, char={:?} (0x{:x}, is_control={})",
+                        state.cursor_position,
+                        c,
+                        c as u32,
+                        c.is_control()
+                    );
+                }
+
+                if c != '\n' {
+                    let next_pos = state.cursor_position + c.len_utf8();
+                    // Optional: check if next_pos lands on newline and decide whether to step onto it?
+                    // For now, simply blocking movement FROM newline (checked above) prevents wrapping to next line.
+                    // But we also want to maybe stop AT the last char, not ON the newline.
+                    // If we want to emulate vim standard behavior:
+                    // If next char is '\n', we DON'T move onto it?
+                    if let Some(next_c) = state.input[next_pos..].chars().next() {
+                        if next_c != '\n' {
+                            state.cursor_position = next_pos;
+                        }
+                    } else if next_pos < state.input.len() {
+                        // End of file case
+                        state.cursor_position = next_pos;
+                    }
                 }
             }
         }
