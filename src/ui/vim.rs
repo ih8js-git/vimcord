@@ -339,7 +339,7 @@ pub async fn handle_vim_keys(
             }
         }
         'k' => {
-            if let AppState::Chatting(_) = state.state {
+            if let AppState::Chatting(_) = &state.state {
                 let current_pos = state.cursor_position;
                 let current_column_width = {
                     let current_line_start = state.input[..current_pos]
