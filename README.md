@@ -1,3 +1,5 @@
+# Rivet
+
 <p align="center">
   <a href="https://aur.archlinux.org/packages/rivetui">
     <img src="https://img.shields.io/aur/version/rivetui?style=for-the-badge&logo=Arch-Linux&logoColor=white&color=1793D1"></a>
@@ -17,7 +19,6 @@
     <img src="https://img.shields.io/github/actions/workflow/status/YetAnotherMechanicusEnjoyer/Rivet/bin.yml?style=for-the-badge&logo=github-actions&logoColor=white&color=2088FF&label=Binaries"></a>
 </p>
 
-# Rivet
 
 <img src="./readme/Rivet.png" alt="Chat Exemple">
 
