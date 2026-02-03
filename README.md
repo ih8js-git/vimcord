@@ -1,21 +1,12 @@
-<p align="center">
-  <a href="https://aur.archlinux.org/packages/rivetui">
-    <img src="https://img.shields.io/aur/version/rivetui?style=for-the-badge&logo=Arch-Linux&logoColor=white&color=1793D1"></a>
-  <a href="https://crates.io/crates/rivetui">
-    <img src="https://img.shields.io/crates/v/rivetui?style=for-the-badge&logo=rust&logoColor=white&color=FF4E00"></a>
-  <a href="https://crates.io/crates/rivetui">
-    <img src="https://img.shields.io/crates/d/rivetui?style=for-the-badge&logo=crates-io&logoColor=white&color=D07300"></a>
-  <a href="https://github.com/YetAnotherMechanicusEnjoyer/Rivet/blob/5392a5b9f8982187b02d11ccd94dcd952fee36b6/LICENSE">
-    <img src="https://img.shields.io/github/license/YetAnotherMechanicusEnjoyer/Rivet?style=for-the-badge&logo=github&color=2EA44F"></a>
-</p>
-<p align="center">
-  <a href="https://github.com/YetAnotherMechanicusEnjoyer/Rivet/actions/workflows/aur.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/YetAnotherMechanicusEnjoyer/Rivet/aur.yml?style=for-the-badge&logo=github-actions&logoColor=white&color=1793D1&label=AUR"></a>
-  <a href="https://github.com/YetAnotherMechanicusEnjoyer/Rivet/actions/workflows/rust.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/YetAnotherMechanicusEnjoyer/Rivet/rust.yml?style=for-the-badge&logo=github-actions&logoColor=white&color=FF4E00&label=Rust"></a>
-  <a href="https://github.com/YetAnotherMechanicusEnjoyer/Rivet/actions/workflows/bin.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/YetAnotherMechanicusEnjoyer/Rivet/bin.yml?style=for-the-badge&logo=github-actions&logoColor=white&color=2088FF&label=Binaries"></a>
-</p>
+[![AUR](https://img.shields.io/aur/version/rivetui?logo=arch-linux)](https://aur.archlinux.org/packages/rivetui)
+[![Crates.io](https://img.shields.io/crates/v/rivetui?logo=rust)](https://crates.io/crates/rivetui)
+[![Downloads](https://img.shields.io/crates/d/rivetui?logo=crates-io)](https://crates.io/crates/rivetui)
+[![License](https://img.shields.io/github/license/YetAnotherMechanicusEnjoyer/Rivet)](https://github.com/YetAnotherMechanicusEnjoyer/Rivet/blob/main/LICENSE)
+
+[![AUR Build](https://img.shields.io/github/actions/workflow/status/YetAnotherMechanicusEnjoyer/Rivet/aur.yml?label=AUR)](https://github.com/YetAnotherMechanicusEnjoyer/Rivet/actions/workflows/aur.yml)
+[![Rust CI](https://img.shields.io/github/actions/workflow/status/YetAnotherMechanicusEnjoyer/Rivet/rust.yml?label=Rust)](https://github.com/YetAnotherMechanicusEnjoyer/Rivet/actions/workflows/rust.yml)
+[![Binaries](https://img.shields.io/github/actions/workflow/status/YetAnotherMechanicusEnjoyer/Rivet/bin.yml?label=Binaries)](https://github.com/YetAnotherMechanicusEnjoyer/Rivet/actions/workflows/bin.yml)
+
 
 # Rivet
 
