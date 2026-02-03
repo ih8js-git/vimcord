@@ -38,10 +38,11 @@ Discord's [Terms of Service (ToS)](https://discord.com/terms) explicitly prohibi
 
 The developers, contibutors, and maintainers are not responsible for any consequences resulting from a user's violation of Discord's Terms of Service. You (the user) assumes all risk if you choose to ignore Discord's policies.
 
-## Installation ([AUR](https://aur.archlinux.org/packages/rivetui))
+## Installation
 
-> [!IMPORTANT]
-> Make sure to have [YaY](https://github.com/Jguer/yay) installed.
+### Arch Linux ([AUR](https://aur.archlinux.org/packages/rivetui))
+
+Requires [YaY](https://github.com/Jguer/yay)
 
 ```bash
 yay -S rivetui
@@ -49,31 +50,23 @@ yay -S rivetui
 yay -S rivetui-git
 ```
 
-## Installation (Binaries)
+### Binaries
 
-> [!NOTE]
-> Download the binaries from the [releases](https://github.com/YetAnotherMechanicusEnjoyer/Rivet/releases/)
+Download prebuilt binaries from: [releases](https://github.com/YetAnotherMechanicusEnjoyer/Rivet/releases/)
 
-## Installation ([Cargo](https://doc.rust-lang.org/cargo/))
+### ([Cargo](https://doc.rust-lang.org/cargo/))
 
-### Dependencies
+Requires [Rust](https://www.rust-lang.org/tools/install) 
 
-> [!IMPORTANT]
-> Make sure to have [Rust](https://www.rust-lang.org/tools/install) installed.
+Make sure that `~/.cargo/bin` is in your PATH env variable.
 
-### Compilation from [crates.io](https://crates.io/crates/rivetui)
-
-> [!IMPORTANT]
-> Make sure that `~/.cargo/bin` is in your PATH env variable.
+#### From [crates.io](https://crates.io/crates/rivetui)
 
 ```bash
 cargo install rivetui
 ```
 
-### Compilation from source
-
-> [!NOTE]
-> Clone the repo somewhere and compile the program.
+### From source
 
 ```bash
 git clone https://github.com/YetAnotherMechanicusEnjoyer/Rivet
@@ -81,34 +74,30 @@ cd Rivet/
 cargo build --release
 ```
 
-> [!TIP]
-> Either execute the binary `./target/release/rivetui` or put it inside a directory included in your PATH env variable.
+Run:
 
-## Initialization
+```bash
+./target/release/rivetui
+```
 
-> [!NOTE]
-> Either make a `.env` file at the root of the repository that contains the `DISCORD_TOKEN` variable, save it in your shell env or write it with the command.
+## Configuration
+Set your Discord token using one of the following:
 
-> [!TIP]
-> Exemple of a `.env` file :
-
+### .env file
 ```env
 DISCORD_TOKEN="your-token-here"
 ```
 
-> [!TIP]
-> Exemple of a shell env variable :
-
-```env
+### Shell
+```bash
 export DISCORD_TOKEN="your-token-here"
 ```
 
-> [!TIP]
-> Exemple of a command-line env variable :
-
-```env
+### Inline
+```bash
 DISCORD_TOKEN="your-token-here" rivetui
 ```
+
 
 ## Usage
 
