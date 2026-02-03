@@ -32,15 +32,11 @@ For best visuals, install  [NerdFonts](https://www.nerdfonts.com/)
 > [!WARNING]
 > Under no circumstances should you use a Discord User Token (also known as a self-bot token) with this software or any associated tools.
 
-Discord's [Terms of Service (ToS)](https://discord.com/terms) explicitly and strictly prohibit the use of User Tokens for programmatic access or self-botting. Violation of these terms can lead to permanent termination of your Discord account.
+Discord's [Terms of Service (ToS)](https://discord.com/terms) explicitly prohibits the use of User Tokens for programmatic access or self-botting. Violation of these terms can lead to permanent termination of your Discord account.
 
 > **Do not use self-bots or user-bots.** Each account must be associated with a human, not a bot. Self-bots put strain on Discord’s infrastructure and our ability to run our services. For more information, you can read our Developer Policies [here](https://discord.com/developers/docs/policy).
 
-The developers, contributors, and maintainers of this repository disclaim all liability and responsibility for any and all consequences that may arise from a user's decision to violate Discord's Terms of Service.
-
-> [!CAUTION]
-> We do not encourage, endorse, or support the use of User Tokens.
-> The user assumes all risk for any account actions, bans, or penalties issued by Discord due to improper use of this software.
+The developers, contibutors, and maintainers are not responsible for any consequences resulting from a user's violation of Discord's Terms of Service. You (the user) assumes all risk if you choose to ignore Discord's policies.
 
 ## Installation ([AUR](https://aur.archlinux.org/packages/rivetui))
 
