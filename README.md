@@ -1,5 +1,7 @@
 # Rivet
 
+> A terminal UI Discord client written in Rust.
+
 ![Chat Example](./readme/Rivet.png)
 
 <p align="center">
