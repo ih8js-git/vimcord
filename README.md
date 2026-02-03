@@ -34,8 +34,7 @@ For best visuals, install  [NerdFonts](https://www.nerdfonts.com/)
 
 Discord's [Terms of Service (ToS)](https://discord.com/terms) explicitly and strictly prohibit the use of User Tokens for programmatic access or self-botting. Violation of these terms can lead to permanent termination of your Discord account.
 
-> - **Do not use self-bots or user-bots.** Each account must be associated with a human, not a bot.
-> Self-bots put strain on Discord’s infrastructure and our ability to run our services. For more information, you can read our Developer Policies [here](https://discord.com/developers/docs/policy).
+> **Do not use self-bots or user-bots.** Each account must be associated with a human, not a bot. Self-bots put strain on Discord’s infrastructure and our ability to run our services. For more information, you can read our Developer Policies [here](https://discord.com/developers/docs/policy).
 
 The developers, contributors, and maintainers of this repository disclaim all liability and responsibility for any and all consequences that may arise from a user's decision to violate Discord's Terms of Service.
 
