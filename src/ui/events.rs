@@ -136,14 +136,11 @@ async fn input_submit(
             _ => {}
         },
         AppState::SelectingDM => {
+            let filter_text = state.input.to_lowercase();
             let dms: Vec<&DM> = state
                 .dms
                 .iter()
-                .filter(|d| {
-                    d.get_name()
-                        .to_lowercase()
-                        .contains(&state.input.to_lowercase())
-                })
+                .filter(|d| d.get_name().to_lowercase().contains(&filter_text))
                 .collect();
 
             if dms.is_empty() {
@@ -164,10 +161,11 @@ async fn input_submit(
                 .ok();
         }
         AppState::SelectingGuild => {
+            let filter_text = state.input.to_lowercase();
             let guilds: Vec<&Guild> = state
                 .guilds
                 .iter()
-                .filter(|g| g.name.to_lowercase().contains(&state.input.to_lowercase()))
+                .filter(|g| g.name.to_lowercase().contains(&filter_text))
                 .collect();
 
             if guilds.is_empty() {
@@ -232,6 +230,7 @@ async fn input_submit(
             let permission_context = &state.context;
             let mut text_channels: Vec<&Channel> = Vec::new();
 
+            let filter_text = state.input.to_lowercase();
             state
                 .channels
                 .iter()
@@ -240,7 +239,7 @@ async fn input_submit(
                     if let Some(context) = &permission_context {
                         readable = c.is_readable(context)
                     }
-                    readable && c.name.to_lowercase().contains(&state.input.to_lowercase())
+                    readable && c.name.to_lowercase().contains(&filter_text)
                 })
                 .for_each(|c| {
                     if let Some(children) = &c.children {
@@ -253,8 +252,7 @@ async fn input_submit(
                                 if let Some(context) = &permission_context {
                                     readable = c.is_readable(context)
                                 }
-                                readable
-                                    && c.name.to_lowercase().contains(&state.input.to_lowercase())
+                                readable && c.name.to_lowercase().contains(&filter_text)
                             })
                             .for_each(|c| {
                                 text_channels.push(c);
@@ -547,7 +545,9 @@ pub async fn handle_keys_events(
                 {
                     state.cursor_position -= c.len_utf8();
                 }
-                vim::clamp_cursor(&mut state);
+                if !(state.cursor_position == state.input.len() && state.input.ends_with('\n')) {
+                    vim::clamp_cursor(&mut state);
+                }
                 return None;
             }
             // Navigation logic: go back to previous screen or quit
