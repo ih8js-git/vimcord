@@ -1,10 +1,10 @@
 [package]
-name = "rivetui"
+name = "vimcord"
 version = "0.2.12"
 edition = "2024"
 description = "A Terminal UI Discord Client in Rust"
-repository = "https://github.com/YetAnotherMechanicusEnjoyer/Rivet"
-homepage = "https://github.com/YetAnotherMechanicusEnjoyer/Rivet"
+repository = "https://github.com/YetAnotherMechanicusEnjoyer/vimcord"
+homepage = "https://github.com/YetAnotherMechanicusEnjoyer/vimcord"
 readme = "README.md"
 license = "MIT"
 authors = [
