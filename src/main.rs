@@ -1,4 +1,4 @@
-use std::{env, io, process, sync::Arc, time::Duration};
+use std::{collections::HashMap, env, io, process, sync::Arc, time::Duration};
 
 use crossterm::{
     cursor::SetCursorStyle,
@@ -18,7 +18,7 @@ use tokio::{
 };
 
 use crate::{
-    api::{ApiClient, Channel, Emoji, Guild, Message, channel::PermissionContext, dm::DM},
+    api::{ApiClient, Channel, Emoji, Guild, Message, User, channel::PermissionContext, dm::DM},
     signals::{restore_terminal, setup_ctrlc_handler},
     ui::{draw_ui, handle_input_events, handle_keys_events, vim::VimState},
 };
@@ -73,6 +73,8 @@ pub enum AppAction {
     ApiUpdateGuilds(Vec<Guild>),
     ApiUpdateDMs(Vec<DM>),
     ApiUpdateContext(Option<PermissionContext>),
+    ApiUpdateCurrentUser(User),
+    ApiUpdateUnreadMessages(String, Vec<Message>),
     TransitionToChat(String),
     TransitionToChannels(String),
     TransitionToGuilds,
@@ -115,6 +117,8 @@ pub struct App {
     cursor_position: usize,
     vim_mode: bool,
     vim_state: Option<VimState>,
+    current_user: Option<User>,
+    last_message_ids: HashMap<String, String>,
 }
 
 async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
@@ -154,6 +158,8 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         } else {
             None
         },
+        current_user: None,
+        last_message_ids: HashMap::new(),
     }));
 
     let (tx_action, mut rx_action) = mpsc::channel::<AppAction>(32);
@@ -201,6 +207,18 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         {
             let state = api_state.lock().await;
             api_client_clone = state.api_client.clone();
+        }
+
+        match api_client_clone.get_current_user().await {
+            Ok(user) => {
+                if let Err(e) = tx_api.send(AppAction::ApiUpdateCurrentUser(user)).await {
+                    eprintln!("Failed to send current user update action: {e}");
+                }
+            }
+            Err(e) => {
+                let mut state = api_state.lock().await;
+                state.status_message = format!("Failed to load current user. {e}");
+            }
         }
 
         match api_client_clone.get_current_user_guilds().await {
@@ -272,6 +290,76 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         }
     });
 
+    let background_state = Arc::clone(&app_state);
+    let tx_background = tx_action.clone();
+    let mut rx_shutdown_background = tx_shutdown.subscribe();
+    let mut background_interval = time::interval(Duration::from_secs(3));
+
+    let background_handle: JoinHandle<()> = tokio::spawn(async move {
+        let api_client_clone;
+        {
+            let state = background_state.lock().await;
+            api_client_clone = state.api_client.clone();
+        }
+
+        // Wait a bit before starting background loops so we don't clobber initial requests
+        tokio::time::sleep(Duration::from_secs(5)).await;
+
+        loop {
+            tokio::select! {
+                _ = rx_shutdown_background.recv() => {
+                    return;
+                }
+
+                _ = background_interval.tick() => {
+                    // Fetch DMs to get the latest last_message_id for each
+                    match api_client_clone.get_dms().await {
+                        Ok(dms) => {
+                            let mut dms_to_fetch = Vec::new();
+
+                            {
+                                let state = background_state.lock().await;
+
+                                for dm in dms {
+                                    if let Some(new_last_id) = &dm.last_message_id {
+                                        // Only fetch messages if we know we have a new message
+                                        let should_fetch = match state.last_message_ids.get(&dm.id) {
+                                            Some(tracked_id) => new_last_id > tracked_id,
+                                            None => true,
+                                        };
+
+                                        if should_fetch {
+                                            dms_to_fetch.push(dm.id.clone());
+                                        }
+                                    }
+                                }
+                            }
+
+                            for channel_id in dms_to_fetch {
+                                match api_client_clone.get_channel_messages(
+                                    &channel_id,
+                                    None,
+                                    None,
+                                    None,
+                                    Some(5),
+                                ).await {
+                                    Ok(messages) => {
+                                        if let Err(e) = tx_background.send(AppAction::ApiUpdateUnreadMessages(channel_id, messages)).await {
+                                            eprintln!("Failed to send unread message update action: {e}");
+                                            return;
+                                        }
+                                    }
+                                    Err(_) => {}
+                                }
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                }
+            }
+        }
+    });
+
     loop {
         {
             let mut state_guard = app_state.lock().await;
@@ -309,7 +397,7 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
 
     let _ = tx_shutdown.send(());
 
-    let _ = tokio::join!(input_handle, api_handle, ticker_handle);
+    let _ = tokio::join!(input_handle, api_handle, ticker_handle, background_handle);
 
     Ok(())
 }
