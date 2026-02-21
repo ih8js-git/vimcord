@@ -149,7 +149,11 @@ async fn input_submit(
 
             let selected_dm = &dms[state.selection_index];
             let dm_id_clone = selected_dm.id.clone();
-            let selected_dm_name = selected_dm.recipients[0].username.clone();
+            let selected_dm_name = if selected_dm.recipients.is_empty() {
+                "Empty".to_string()
+            } else {
+                selected_dm.recipients[0].username.clone()
+            };
 
             state.input = String::new();
             state.cursor_position = 0;
