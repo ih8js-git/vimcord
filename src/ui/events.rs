@@ -725,6 +725,19 @@ pub async fn handle_keys_events(
         AppAction::SelectNext => move_selection(&mut state, 1, total_filtered_emojis).await,
         AppAction::SelectPrevious => move_selection(&mut state, -1, total_filtered_emojis).await,
         AppAction::ApiUpdateMessages(new_messages) => {
+            let active_channel_id = if let AppState::Chatting(id) = &state.state {
+                Some(id.clone())
+            } else {
+                None
+            };
+
+            if let Some(channel_id) = active_channel_id
+                && let Some(newest_msg) = new_messages.iter().max_by_key(|m| &m.id)
+            {
+                state
+                    .last_message_ids
+                    .insert(channel_id, newest_msg.id.clone());
+            }
             state.messages = new_messages;
         }
         AppAction::ApiUpdateGuilds(new_guilds) => {
@@ -750,7 +763,17 @@ pub async fn handle_keys_events(
             state.custom_emojis = new_emojis;
         }
         AppAction::ApiUpdateDMs(new_dms) => {
-            state.dms = new_dms;
+            state.dms = new_dms.clone();
+
+            // Initialize last_message_ids for all DMs on load
+            for dm in new_dms {
+                if let Some(msg_id) = dm.last_message_id {
+                    // Only insert if it doesn't already exist so we don't accidentally
+                    // overwrite during a mid-session refresh
+                    state.last_message_ids.entry(dm.id).or_insert(msg_id);
+                }
+            }
+
             let dms_count = state.dms.len();
             if dms_count > 0 {
                 state.status_message =
@@ -762,6 +785,65 @@ pub async fn handle_keys_events(
         }
         AppAction::ApiUpdateContext(new_context) => {
             state.context = new_context;
+        }
+        AppAction::ApiUpdateCurrentUser(user) => {
+            state.current_user = Some(user);
+        }
+        AppAction::ApiUpdateUnreadMessages(channel_id, new_messages) => {
+            let is_active_channel = match &state.state {
+                AppState::Chatting(active_id) => active_id == &channel_id,
+                _ => false,
+            };
+
+            if !new_messages.is_empty() {
+                // Only notify if we are not actively viewing this channel
+                if !is_active_channel {
+                    for msg in &new_messages {
+                        let should_notify = match state.last_message_ids.get(&channel_id) {
+                            // If we tracked it, check if it's strictly newer
+                            Some(last_id) => {
+                                msg.id.parse::<u64>().unwrap_or_default()
+                                    > last_id.parse::<u64>().unwrap_or_default()
+                            }
+                            // If we haven't tracked it, it's a completely new DM created mid-session!
+                            None => true,
+                        };
+
+                        if should_notify {
+                            let is_self = state
+                                .current_user
+                                .as_ref()
+                                .is_some_and(|u| u.id == msg.author.id);
+
+                            if !is_self {
+                                let sender = msg.author.username.clone();
+                                let content = if state.discreet_notifs {
+                                    "Sent you a DM".to_string()
+                                } else {
+                                    msg.content
+                                        .clone()
+                                        .unwrap_or_else(|| "Sent an attachment".to_string())
+                                };
+                                let _ = notify_rust::Notification::new()
+                                    .summary(&sender)
+                                    .body(&content)
+                                    .appname("vimcord")
+                                    .show();
+                            }
+                        }
+                    }
+                }
+
+                // Track the ID of the newest message in this batch (first in array or max ID)
+                if let Some(newest_msg) = new_messages
+                    .iter()
+                    .max_by_key(|m| m.id.parse::<u64>().unwrap_or_default())
+                {
+                    state
+                        .last_message_ids
+                        .insert(channel_id, newest_msg.id.clone());
+                }
+            }
         }
         AppAction::TransitionToChannels(guild_id) => {
             state.input = String::new();

@@ -7,6 +7,7 @@ pub struct DM {
     pub id: String,
     #[serde(rename = "type")]
     pub channel_type: u8,
+    pub last_message_id: Option<String>,
     pub recipients: Vec<User>,
 }
 
