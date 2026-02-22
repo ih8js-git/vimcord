@@ -34,7 +34,7 @@ impl Default for Config {
 }
 
 pub fn load_config() -> Config {
-    let app_name = "rivetui";
+    let app_name = "vimcord";
     match confy::load::<Config>(app_name, "config") {
         Ok(mut cfg) => {
             if cfg.emoji_map.is_empty() {
