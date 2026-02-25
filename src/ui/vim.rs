@@ -247,18 +247,18 @@ pub async fn handle_vim_keys(
 
     match c {
         'i' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
-                    return;
-                }
+            if let AppState::Chatting(_) = &state.state
+                && state.selection_index > 0
+            {
+                return;
             }
             state.mode = InputMode::Insert;
         }
         'I' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
-                    return;
-                }
+            if let AppState::Chatting(_) = &state.state
+                && state.selection_index > 0
+            {
+                return;
             }
             let start_of_line = state.input[..state.cursor_position]
                 .rfind('\n')
@@ -268,10 +268,10 @@ pub async fn handle_vim_keys(
             state.mode = InputMode::Insert;
         }
         'a' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
-                    return;
-                }
+            if let AppState::Chatting(_) = &state.state
+                && state.selection_index > 0
+            {
+                return;
             }
             if let Some(c) = state.input[state.cursor_position..].chars().next() {
                 state.cursor_position += c.len_utf8();
@@ -279,10 +279,10 @@ pub async fn handle_vim_keys(
             state.mode = InputMode::Insert;
         }
         'A' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
-                    return;
-                }
+            if let AppState::Chatting(_) = &state.state
+                && state.selection_index > 0
+            {
+                return;
             }
             let end_of_line = state.input[state.cursor_position..]
                 .find('\n')
@@ -292,10 +292,10 @@ pub async fn handle_vim_keys(
             state.mode = InputMode::Insert;
         }
         'O' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
-                    return;
-                }
+            if let AppState::Chatting(_) = &state.state
+                && state.selection_index > 0
+            {
+                return;
             }
             let current_line_start = state.input[..state.cursor_position]
                 .rfind('\n')
@@ -306,10 +306,10 @@ pub async fn handle_vim_keys(
             state.mode = InputMode::Insert;
         }
         'o' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
-                    return;
-                }
+            if let AppState::Chatting(_) = &state.state
+                && state.selection_index > 0
+            {
+                return;
             }
             let next_line_start = state.input[state.cursor_position..]
                 .find('\n')
@@ -453,10 +453,10 @@ pub async fn handle_vim_keys(
             }
         }
         'w' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
-                    return;
-                }
+            if let AppState::Chatting(_) = &state.state
+                && state.selection_index > 0
+            {
+                return;
             }
             if let Some(op) = current_operator {
                 let range = get_motion_range(&state, VimMotion::WordForward);
@@ -471,10 +471,10 @@ pub async fn handle_vim_keys(
             }
         }
         'b' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
-                    return;
-                }
+            if let AppState::Chatting(_) = &state.state
+                && state.selection_index > 0
+            {
+                return;
             }
             if let Some(op) = current_operator {
                 let range = get_motion_range(&state, VimMotion::WordBackward);
@@ -488,40 +488,40 @@ pub async fn handle_vim_keys(
             }
         }
         'd' => {
-            if let AppState::Chatting(channel_id) = &state.state {
-                if state.selection_index > 0 {
-                    if let Some(VimOperator::Delete) = current_operator {
-                        // User pressed dd on a historical message!
-                        let msg_index_in_slice = state.selection_index.saturating_sub(1);
+            if let AppState::Chatting(channel_id) = &state.state
+                && state.selection_index > 0
+            {
+                if let Some(VimOperator::Delete) = current_operator {
+                    // User pressed dd on a historical message!
+                    let msg_index_in_slice = state.selection_index.saturating_sub(1);
 
-                        if let Some(msg) = state.messages.get(msg_index_in_slice) {
-                            // Check if the current user is the author
-                            if state
-                                .current_user
-                                .as_ref()
-                                .is_some_and(|user| user.id == msg.author.id)
-                            {
-                                let msg_id = msg.id.clone();
-                                let ch_id = channel_id.clone();
+                    if let Some(msg) = state.messages.get(msg_index_in_slice) {
+                        // Check if the current user is the author
+                        if state
+                            .current_user
+                            .as_ref()
+                            .is_some_and(|user| user.id == msg.author.id)
+                        {
+                            let msg_id = msg.id.clone();
+                            let ch_id = channel_id.clone();
 
-                                tx_action
-                                    .send(AppAction::ApiDeleteMessage(ch_id, msg_id))
-                                    .await
-                                    .ok();
+                            tx_action
+                                .send(AppAction::ApiDeleteMessage(ch_id, msg_id))
+                                .await
+                                .ok();
 
-                                // Reset the operator immediately to not trigger regular deletion on selection change later
-                                if let Some(vim_state) = &mut state.vim_state {
-                                    vim_state.operator = None;
-                                }
+                            // Reset the operator immediately to not trigger regular deletion on selection change later
+                            if let Some(vim_state) = &mut state.vim_state {
+                                vim_state.operator = None;
                             }
-                            // If they are not the author, do nothing (we could flash status natively).
                         }
-                    } else if let Some(vim_state) = &mut state.vim_state {
-                        vim_state.operator = Some(VimOperator::Delete);
-                        vim_state.last_action_time = Instant::now();
+                        // If they are not the author, do nothing (we could flash status natively).
                     }
-                    return;
+                } else if let Some(vim_state) = &mut state.vim_state {
+                    vim_state.operator = Some(VimOperator::Delete);
+                    vim_state.last_action_time = Instant::now();
                 }
+                return;
             }
             if let Some(VimOperator::Delete) = current_operator {
                 let current_pos = state.cursor_position;
@@ -560,10 +560,10 @@ pub async fn handle_vim_keys(
             }
         }
         'x' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
-                    return;
-                }
+            if let AppState::Chatting(_) = &state.state
+                && state.selection_index > 0
+            {
+                return;
             }
             let pos = state.cursor_position;
             if pos < state.input.len()
