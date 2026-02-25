@@ -68,7 +68,7 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
                 .block(
                     Block::default()
                         .title(Span::styled(
-                            "Rivet Client - Home",
+                            "vimcord Client - Home",
                             Style::default().fg(Color::Yellow),
                         ))
                         .borders(Borders::ALL)
@@ -119,7 +119,7 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
                 .block(
                     Block::default()
                         .title(Span::styled(
-                            "Rivet Client - Direct Messages",
+                            "vimcord Client - Direct Messages",
                             Style::default().fg(Color::Yellow),
                         ))
                         .borders(Borders::ALL)
@@ -164,7 +164,7 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
                 .block(
                     Block::default()
                         .title(Span::styled(
-                            "Rivet Client - Guilds",
+                            "vimcord Client - Guilds",
                             Style::default().fg(Color::Yellow),
                         ))
                         .borders(Borders::ALL)
@@ -489,7 +489,7 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
                 .block(
                     Block::default()
                         .title(Span::styled(
-                            "Rivet Client - Chatting",
+                            "vimcord Client - Chatting",
                             Style::default().fg(Color::Yellow),
                         ))
                         .borders(Borders::ALL)
