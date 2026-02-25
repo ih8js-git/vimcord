@@ -870,6 +870,8 @@ pub async fn handle_keys_events(
                 state.selection_index = 0;
             }
             state.state = AppState::Chatting(channel_id.clone());
+            state.chat_scroll_offset = 0;
+            state.selection_index = 0;
             state.status_message =
                 "Chatting in channel. Press Enter to send message, Esc to return to channels."
                     .to_string();
