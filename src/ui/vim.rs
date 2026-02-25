@@ -488,8 +488,38 @@ pub async fn handle_vim_keys(
             }
         }
         'd' => {
-            if let AppState::Chatting(_) = &state.state {
+            if let AppState::Chatting(channel_id) = &state.state {
                 if state.selection_index > 0 {
+                    if let Some(VimOperator::Delete) = current_operator {
+                        // User pressed dd on a historical message!
+                        let msg_index_in_slice = state.selection_index.saturating_sub(1);
+
+                        if let Some(msg) = state.messages.get(msg_index_in_slice) {
+                            // Check if the current user is the author
+                            if state
+                                .current_user
+                                .as_ref()
+                                .is_some_and(|user| user.id == msg.author.id)
+                            {
+                                let msg_id = msg.id.clone();
+                                let ch_id = channel_id.clone();
+
+                                tx_action
+                                    .send(AppAction::ApiDeleteMessage(ch_id, msg_id))
+                                    .await
+                                    .ok();
+
+                                // Reset the operator immediately to not trigger regular deletion on selection change later
+                                if let Some(vim_state) = &mut state.vim_state {
+                                    vim_state.operator = None;
+                                }
+                            }
+                            // If they are not the author, do nothing (we could flash status natively).
+                        }
+                    } else if let Some(vim_state) = &mut state.vim_state {
+                        vim_state.operator = Some(VimOperator::Delete);
+                        vim_state.last_action_time = Instant::now();
+                    }
                     return;
                 }
             }

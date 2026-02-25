@@ -1,4 +1,9 @@
-use std::{collections::HashMap, env, io, process, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    env, io, process,
+    sync::Arc,
+    time::Duration,
+};
 
 use crossterm::{
     cursor::SetCursorStyle,
@@ -84,6 +89,7 @@ pub enum AppAction {
     EndLoading,
     SelectEmoji,
     Paste(String),
+    ApiDeleteMessage(String, String),
     Tick,
 }
 
@@ -121,6 +127,7 @@ pub struct App {
     current_user: Option<User>,
     last_message_ids: HashMap<String, String>,
     discreet_notifs: bool,
+    deleted_message_ids: HashSet<String>,
 }
 
 async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
@@ -164,6 +171,7 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         current_user: None,
         last_message_ids: HashMap::new(),
         discreet_notifs: config.discreet_notifs,
+        deleted_message_ids: HashSet::new(),
     }));
 
     let (tx_action, mut rx_action) = mpsc::channel::<AppAction>(32);

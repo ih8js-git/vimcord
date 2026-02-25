@@ -738,7 +738,10 @@ pub async fn handle_keys_events(
                     .last_message_ids
                     .insert(channel_id, newest_msg.id.clone());
             }
-            state.messages = new_messages;
+            state.messages = new_messages
+                .into_iter()
+                .filter(|m| !state.deleted_message_ids.contains(&m.id))
+                .collect();
         }
         AppAction::ApiUpdateGuilds(new_guilds) => {
             state.guilds = new_guilds.clone();
@@ -892,6 +895,29 @@ pub async fn handle_keys_events(
             state.status_message =
                 "Select a DM. Use arrows to navigate, Enter to select & Esc to quit".to_string();
             state.selection_index = 0;
+        }
+        AppAction::ApiDeleteMessage(channel_id, message_id) => {
+            let api_client_clone = state.api_client.clone();
+            let channel_id_clone = channel_id.clone();
+            let message_id_clone = message_id.clone();
+
+            tokio::spawn(async move {
+                if let Err(e) = api_client_clone
+                    .delete_message(&channel_id_clone, &message_id_clone)
+                    .await
+                {
+                    eprintln!("API Error deleting message: {e}");
+                }
+            });
+
+            // Optimistically remove the message from the local view and track it
+            state.deleted_message_ids.insert(message_id.clone());
+            state.messages.retain(|m| m.id != message_id);
+
+            // Re-clamp selection index if the list shrank
+            if state.selection_index > state.messages.len() {
+                state.selection_index = state.messages.len();
+            }
         }
         AppAction::TransitionToHome => {
             state.input = String::new();

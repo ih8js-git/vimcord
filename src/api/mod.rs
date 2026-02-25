@@ -69,6 +69,36 @@ impl ApiClient {
         }
     }
 
+    async fn api_request_no_content(
+        &self,
+        endpoint: &str,
+        method: Method,
+        body: Option<serde_json::Value>,
+    ) -> Result<(), Error> {
+        let url = format!("{}/{}", self.base_url, endpoint);
+        let mut request = self
+            .http_client
+            .request(method, &url)
+            .header("Authorization", self.auth_token.as_str());
+
+        if let Some(data) = body {
+            request = request.json(&data);
+        }
+
+        let response = request.send().await?;
+        let status = response.status();
+
+        if status.is_success() {
+            Ok(())
+        } else {
+            let body = response
+                .text()
+                .await
+                .unwrap_or("Failed to read error body".to_string());
+            Err(format!("API Error: Status {status}. Details: {body}").into())
+        }
+    }
+
     pub async fn get_current_user(&self) -> Result<User, Error> {
         self.api_request("users/@me", Method::GET, None).await
     }
@@ -149,6 +179,15 @@ impl ApiClient {
             format!("channels/{channel_id}/messages").as_str(),
             Method::POST,
             Some(serde_json::json!({ "content": content, "tts": tts })),
+        )
+        .await
+    }
+
+    pub async fn delete_message(&self, channel_id: &str, message_id: &str) -> Result<(), Error> {
+        self.api_request_no_content(
+            format!("channels/{channel_id}/messages/{message_id}").as_str(),
+            Method::DELETE,
+            None,
         )
         .await
     }
