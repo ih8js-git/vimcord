@@ -545,6 +545,15 @@ pub async fn handle_vim_keys(
                 clamp_cursor(&mut state);
             }
         }
+        'G' => {
+            if let AppState::Chatting(_) = &state.state {
+                state.selection_index = 0;
+
+                let len = state.input.len();
+                state.cursor_position = len;
+                clamp_cursor(&mut state);
+            }
+        }
         ':' => {
             // In the future, this could enter command mode.
             // For now, we do nothing to avoid conflict with standard Vim behavior.
