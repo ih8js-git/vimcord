@@ -19,9 +19,9 @@ The following features are grouped by **Importance** (Critical to Low). Within e
 ### 1. Critical Importance (Core Usability)
 *These are essential features that users expect from any functioning chat client. Without these, the client feels incomplete.*
 
-1. **Message Deletion** *(Difficulty: Easy)*
-   - **Description**: Ability for the user to delete their own messages.
-   - **Implementation**: Adding a keybinding in the UI to call `DELETE /channels/{channel.id}/messages/{message.id}`.
+1. ~~**Message Deletion** *(Difficulty: Easy)*~~
+   - <small>~~**Description**: Ability for the user to delete their own messages.~~</small>
+   - <small>~~**Implementation**: Adding a keybinding in the UI to call `DELETE /channels/{channel.id}/messages/{message.id}`.~~</small>
 2. **Mark as Read / Read Receipts** *(Difficulty: Easy)*
    - **Description**: Updating the local and remote "last read" state to clear unread notification badges.
    - **Implementation**: Hitting the `/ack` endpoint for channels when viewed.
