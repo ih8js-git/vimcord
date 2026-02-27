@@ -18,8 +18,7 @@ The following features are grouped by **Importance** (Critical to Low). Within e
 
 ### 1. Critical Importance (Core Usability)
 *These are essential features that users expect from any functioning chat client. Without these, the client feels incomplete.*
-
-1. ~~**Message Deletion** *(Difficulty: Easy)*~~
+1. <small>~~**Message Deletion** *(Difficulty: Easy)*~~</small>
    - <small>~~**Description**: Ability for the user to delete their own messages.~~</small>
    - <small>~~**Implementation**: Adding a keybinding in the UI to call `DELETE /channels/{channel.id}/messages/{message.id}`.~~</small>
 2. **Mark as Read / Read Receipts** *(Difficulty: Easy)*
@@ -38,10 +37,7 @@ The following features are grouped by **Importance** (Critical to Low). Within e
 ### 2. High Importance (Standard Discord Experience)
 *Features that make Discord unique and are heavily used in daily communication.*
 
-1. **WebSocket / Gateway Migration** *(Difficulty: Hard)*
-   - **Description**: Refactor the application network layer away from relying solely on HTTP requests. Move to persistent WebSocket connections.
-   - **Implementation**: Connect to the Discord Gateway via WebSockets to receive real-time push events (e.g., new messages, status updates, typing indicators) rather than making HTTP API calls or polling.
-2. **User Status/Presence Update** *(Difficulty: Easy)*
+1. **User Status/Presence Update** *(Difficulty: Easy)*
    - **Description**: Setting custom status text or changing presence (Online, Idle, DND, Invisible).
    - **Implementation**: Sending Gateway presence update payloads directly or via a simple UI modal.
 2. **Pinned Messages** *(Difficulty: Easy)*
@@ -59,7 +55,10 @@ The following features are grouped by **Importance** (Critical to Low). Within e
 6. **Threads** *(Difficulty: Medium)*
    - **Description**: Viewing thread lists, joining threads, and sending messages within threads.
    - **Implementation**: Threads are conceptually similar to channels but require specific API handling and a nested or distinct UI view mode.
-6. **Embeds & Attachments Viewing** *(Difficulty: Hard)*
+7. **WebSocket / Gateway Migration** *(Difficulty: Hard)*
+   - **Description**: Refactor the application network layer away from relying solely on HTTP requests. Move to persistent WebSocket connections.
+   - **Implementation**: Connect to the Discord Gateway via WebSockets to receive real-time push events (e.g., new messages, status updates, typing indicators) rather than making HTTP API calls or polling.
+8. **Embeds & Attachments Viewing** *(Difficulty: Hard)*
    - **Description**: Displaying rich embeds, links, and text summaries of images/files in the TUI.
    - **Implementation**: Parsing complex embed payloads and formatting them nicely in the terminal. (Full image rendering requires terminal graphics protocols like Sixel).
 
