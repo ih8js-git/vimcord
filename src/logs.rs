@@ -12,12 +12,11 @@ pub enum LogType {
 }
 
 fn write_log_file(path: PathBuf, msg: &[u8]) -> Result<(), Error> {
-    let mut file = match File::open(&path) {
-        Ok(f) => f,
-        Err(_) => File::create_new(path)?,
-    };
-
-    file.write_all(msg)?;
+    File::options()
+        .append(true)
+        .create(true)
+        .open(path)?
+        .write_all(msg)?;
     Ok(())
 }
 
