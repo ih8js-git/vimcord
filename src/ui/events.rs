@@ -9,6 +9,7 @@ use tokio::{
 use crate::{
     App, AppAction, AppState, InputMode, KeywordAction, Window,
     api::{Channel, DM, Emoji, Guild},
+    logs::{LogType, print_log},
     ui::vim,
 };
 
@@ -201,7 +202,10 @@ async fn input_submit(
                             .ok();
                     }
                     Err(e) => {
-                        eprintln!("Failed to load channels: {e}");
+                        let _ = print_log(
+                            format!("Failed to load channels: {e}").into(),
+                            LogType::Error,
+                        );
                     }
                 }
                 match api_client_clone.get_guild_emojis(&guild_id_clone).await {
@@ -209,7 +213,10 @@ async fn input_submit(
                         tx_clone.send(AppAction::ApiUpdateEmojis(emojis)).await.ok();
                     }
                     Err(e) => {
-                        eprintln!("Failed to load custom emojis: {e}");
+                        let _ = print_log(
+                            format!("Failed to load custom emojis: {e}").into(),
+                            LogType::Error,
+                        );
                     }
                 }
                 match api_client_clone
@@ -223,7 +230,10 @@ async fn input_submit(
                             .ok();
                     }
                     Err(e) => {
-                        eprintln!("Failed to load permission context: {e}");
+                        let _ = print_log(
+                            format!("Failed to load permission context: {e}").into(),
+                            LogType::Error,
+                        );
                     }
                 }
 
@@ -297,7 +307,10 @@ async fn input_submit(
             {
                 Ok(messages) => {
                     if let Err(e) = tx_action.send(AppAction::ApiUpdateMessages(messages)).await {
-                        eprintln!("Failed to send message update action: {e}");
+                        let _ = print_log(
+                            format!("Failed to send message update action: {e}").into(),
+                            LogType::Error,
+                        );
                         return None;
                     }
                 }
@@ -388,7 +401,7 @@ async fn input_submit(
                     {
                         Ok(_) => {}
                         Err(e) => {
-                            eprintln!("API Error: {e}");
+                            let _ = print_log(format!("API Error: {e}").into(), LogType::Error);
                         }
                     }
                 });
@@ -906,7 +919,10 @@ pub async fn handle_keys_events(
                     .delete_message(&channel_id_clone, &message_id_clone)
                     .await
                 {
-                    eprintln!("API Error deleting message: {e}");
+                    let _ = print_log(
+                        format!("API Error deleting message: {e}").into(),
+                        LogType::Error,
+                    );
                 }
             });
 

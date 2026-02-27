@@ -6,13 +6,13 @@ pub mod message;
 pub mod user;
 
 use reqwest::{Client, Method};
+use serde::de::DeserializeOwned;
 
 pub use channel::Channel;
 pub use dm::DM;
 pub use emoji::Emoji;
 pub use guild::Guild;
 pub use message::Message;
-use serde::de::DeserializeOwned;
 pub use user::User;
 
 use crate::{

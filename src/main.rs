@@ -24,12 +24,14 @@ use tokio::{
 
 use crate::{
     api::{ApiClient, Channel, Emoji, Guild, Message, User, channel::PermissionContext, dm::DM},
+    logs::{LogType, print_log},
     signals::{restore_terminal, setup_ctrlc_handler},
     ui::{draw_ui, handle_input_events, handle_keys_events, vim::VimState},
 };
 
 mod api;
 mod config;
+mod logs;
 mod signals;
 mod ui;
 
@@ -188,11 +190,12 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         loop {
             tokio::select! {
                 _ = rx_shutdown_ticker.recv() => {
+                    let _ = print_log("Shutdown Program.".into(), LogType::Info);
                     return;
                 }
                 _ = interval.tick() => {
                     if let Err(e) = tx_ticker.send(AppAction::Tick).await {
-                        eprintln!("Failed to send tick action: {e}");
+                        let _ = print_log(format!("Failed to send tick action: {e}").into(), LogType::Error);
                         return;
                     }
                 }
@@ -203,7 +206,7 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
     let input_handle: JoinHandle<Result<(), io::Error>> = tokio::spawn(async move {
         let res = handle_input_events(tx_input, rx_shutdown_input).await;
         if let Err(e) = &res {
-            eprintln!("Input Error: {e}");
+            let _ = print_log(format!("Input Error: {e}").into(), LogType::Error);
         }
         res
     });
@@ -224,7 +227,10 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         match api_client_clone.get_current_user().await {
             Ok(user) => {
                 if let Err(e) = tx_api.send(AppAction::ApiUpdateCurrentUser(user)).await {
-                    eprintln!("Failed to send current user update action: {e}");
+                    let _ = print_log(
+                        format!("Failed to send current user update action: {e}").into(),
+                        LogType::Error,
+                    );
                 }
             }
             Err(e) => {
@@ -236,7 +242,10 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         match api_client_clone.get_current_user_guilds().await {
             Ok(guilds) => {
                 if let Err(e) = tx_api.send(AppAction::ApiUpdateGuilds(guilds)).await {
-                    eprintln!("Failed to send guild update action: {e}");
+                    let _ = print_log(
+                        format!("Failed to send guild update action: {e}").into(),
+                        LogType::Error,
+                    );
                 }
             }
             Err(e) => {
@@ -248,7 +257,10 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         match api_client_clone.get_dms().await {
             Ok(dms) => {
                 if let Err(e) = tx_api.send(AppAction::ApiUpdateDMs(dms)).await {
-                    eprintln!("Failed to send DM update action: {e}");
+                    let _ = print_log(
+                        format!("Failed to send DM update action: {e}").into(),
+                        LogType::Error,
+                    );
                 }
             }
             Err(e) => {
@@ -288,7 +300,7 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
                         {
                             Ok(messages) => {
                                 if let Err(e) = tx_api.send(AppAction::ApiUpdateMessages(messages)).await {
-                                    eprintln!("Failed to send message update action: {e}");
+                                    let _ = print_log(format!("Failed to send message update action: {e}").into(), LogType::Error);
                                     return;
                                 }
                             }
@@ -356,7 +368,7 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
                             ).await
                                 && let Err(e) = tx_background.send(AppAction::ApiUpdateUnreadMessages(channel_id, messages)).await
                             {
-                                eprintln!("Failed to send unread message update action: {e}");
+                                let _ = print_log(format!("Failed to send unread message update action: {e}").into(), LogType::Error);
                                 return;
                             }
                         }
@@ -414,7 +426,9 @@ async fn main() -> Result<(), Error> {
     const ENV_TOKEN: &str = "DISCORD_TOKEN";
 
     let token: String = env::var(ENV_TOKEN).unwrap_or_else(|_| {
-        eprintln!("Env Error: DISCORD_TOKEN variable is missing.");
+        let msg = "Env Error: DISCORD_TOKEN variable is missing.";
+        eprintln!("{msg}");
+        let _ = print_log(msg.into(), LogType::Error);
         process::exit(1);
     });
 
