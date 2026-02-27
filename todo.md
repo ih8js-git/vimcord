@@ -38,7 +38,10 @@ The following features are grouped by **Importance** (Critical to Low). Within e
 ### 2. High Importance (Standard Discord Experience)
 *Features that make Discord unique and are heavily used in daily communication.*
 
-1. **User Status/Presence Update** *(Difficulty: Easy)*
+1. **WebSocket / Gateway Migration** *(Difficulty: Hard)*
+   - **Description**: Refactor the application network layer away from relying solely on HTTP requests. Move to persistent WebSocket connections.
+   - **Implementation**: Connect to the Discord Gateway via WebSockets to receive real-time push events (e.g., new messages, status updates, typing indicators) rather than making HTTP API calls or polling.
+2. **User Status/Presence Update** *(Difficulty: Easy)*
    - **Description**: Setting custom status text or changing presence (Online, Idle, DND, Invisible).
    - **Implementation**: Sending Gateway presence update payloads directly or via a simple UI modal.
 2. **Pinned Messages** *(Difficulty: Easy)*
@@ -50,7 +53,10 @@ The following features are grouped by **Importance** (Critical to Low). Within e
 4. **Reactions** *(Difficulty: Medium)*
    - **Description**: Viewing, adding, and removing Unicode and custom emoji reactions on messages.
    - **Implementation**: UI for selecting emojis, rendering reaction counts under messages, and hitting the reactions endpoints.
-5. **Threads** *(Difficulty: Medium)*
+5. **Emoji Handling Refactor** *(Difficulty: Medium)*
+   - **Description**: Refactor away from using a static `emojis.json` file for emoji definition/lookups.
+   - **Implementation**: Migrate to a proper Rust crate for handling emojis (such as `emojis` or `unicode-emoji`). This ensures up-to-date and robust parsing, categorization, and handling of emoji shortcodes without maintaining a localized JSON dump.
+6. **Threads** *(Difficulty: Medium)*
    - **Description**: Viewing thread lists, joining threads, and sending messages within threads.
    - **Implementation**: Threads are conceptually similar to channels but require specific API handling and a nested or distinct UI view mode.
 6. **Embeds & Attachments Viewing** *(Difficulty: Hard)*
