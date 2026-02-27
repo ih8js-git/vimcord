@@ -61,12 +61,12 @@ The following features are grouped by **Importance** (Foundation, Critical, High
 5. **Emoji Handling Refactor** *(Difficulty: Medium)*
    - **Description**: Refactor away from using a static `emojis.json` file for emoji definition/lookups.
    - **Implementation**: Migrate to a proper Rust crate for handling emojis (such as `emojis` or `unicode-emoji`). This ensures up-to-date and robust parsing, categorization, and handling of emoji shortcodes without maintaining a localized JSON dump.
-6. **Vim Command Mode & Quitting** *(Difficulty: Hard)*
-   - **Description**: Stop `Esc` from immediately quitting the entire application. Instead, introduce a true Command Mode where users must type `:q` (or `:quit`) to exit, more closely mirroring actual Vim behavior.
-   - **Implementation**: Intercept `Esc` to ensure it only drops to Normal Mode (or clears input). Add an input buffer for handling `:` commands and parse them accordingly. **Note: This will require a new UI overlay/input mode and will likely significantly overlap and conflict with emoji (`:emoji:`) shortcode handling.**
-7. **Threads** *(Difficulty: Medium)*
+6. **Threads** *(Difficulty: Medium)*
    - **Description**: Viewing thread lists, joining threads, and sending messages within threads.
    - **Implementation**: Threads are conceptually similar to channels but require specific API handling and a nested or distinct UI view mode.
+7. **Vim Command Mode & Quitting** *(Difficulty: Hard)*
+   - **Description**: Stop `Esc` from immediately quitting the entire application. Instead, introduce a true Command Mode where users must type `:q` (or `:quit`) to exit, more closely mirroring actual Vim behavior.
+   - **Implementation**: Intercept `Esc` to ensure it only drops to Normal Mode (or clears input). Add an input buffer for handling `:` commands and parse them accordingly. **Note: This will require a new UI overlay/input mode and will likely significantly overlap and conflict with emoji (`:emoji:`) shortcode handling.**
 7. **Embeds & Attachments Viewing** *(Difficulty: Impractical)*
    - **Description**: Displaying rich embeds, links, and text summaries of images/files in the TUI.
    - **Implementation**: Parsing complex embed payloads and formatting them nicely in the terminal. (Full image rendering requires terminal graphics protocols like Sixel).
