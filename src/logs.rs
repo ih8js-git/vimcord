@@ -46,7 +46,6 @@ fn get_log_directory(app_name: &str) -> Option<PathBuf> {
         // Windows: %LOCALAPPDATA%\vimcord\logs
         dirs::data_local_dir().map(|mut path| {
             path.push(app_name);
-            path.push("logs");
             Some(path)
         })
     }
