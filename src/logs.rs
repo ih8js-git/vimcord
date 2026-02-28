@@ -70,4 +70,9 @@ fn get_log_directory(app_name: &str) -> Option<PathBuf> {
         path.push(app_name);
         Some(path)
     }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        std::env::current_dir().ok()
+    }
 }
