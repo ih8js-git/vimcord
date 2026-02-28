@@ -1,5 +1,4 @@
 use crate::Error;
-use dirs;
 use std::{fs::File, io::Write, path::PathBuf};
 
 const APP_NAME: &str = "vimcord";
