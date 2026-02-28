@@ -46,24 +46,24 @@ fn get_log_directory(app_name: &str) -> Option<PathBuf> {
         // Windows: %LOCALAPPDATA%\vimcord\logs
         dirs::data_local_dir().map(|mut path| {
             path.push(app_name);
-            Some(path)
+            path
         })
     }
 
     #[cfg(target_os = "macos")]
     {
-        // macOS: ~/Library/Logs/vimcord
+        // macOS: ~/Library/Logs/vimcord/logs
         dirs::home_dir().map(|mut path| {
             path.push("Library");
             path.push("Logs");
             path.push(app_name);
-            Some(path)
+            path
         })
     }
 
     #[cfg(target_os = "linux")]
     {
-        // Linux: ~/.cache/vimcord
+        // Linux: ~/.cache/vimcord/logs
         let mut path = dirs::cache_dir()?;
 
         path.push(app_name);
