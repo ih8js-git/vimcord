@@ -95,6 +95,12 @@ pub async fn handle_input_events(
                                         KeyCode::Down => {
                                             tx.send(AppAction::SelectNext).await.ok();
                                         }
+                                        KeyCode::Left => {
+                                            tx.send(AppAction::SelectLeft).await.ok();
+                                        }
+                                        KeyCode::Right => {
+                                            tx.send(AppAction::SelectRight).await.ok();
+                                        }
                                         KeyCode::Char(c) => {
                                             tx.send(AppAction::InputChar(c)).await.ok();
                                         }
@@ -724,6 +730,12 @@ pub async fn handle_keys_events(
         }
         AppAction::SelectNext => move_selection(&mut state, 1, total_filtered_emojis).await,
         AppAction::SelectPrevious => move_selection(&mut state, -1, total_filtered_emojis).await,
+        AppAction::SelectLeft => {
+            vim::handle_vim_keys(state, 'h', tx_action).await;
+        }
+        AppAction::SelectRight => {
+            vim::handle_vim_keys(state, 'l', tx_action).await;
+        }
         AppAction::ApiUpdateMessages(new_messages) => {
             state.messages = new_messages;
         }

@@ -67,6 +67,8 @@ pub enum AppAction {
     InputSubmit,
     SelectNext,
     SelectPrevious,
+    SelectLeft,
+    SelectRight,
     ApiUpdateMessages(Vec<Message>),
     ApiUpdateChannel(Vec<Channel>),
     ApiUpdateEmojis(Vec<Emoji>),
