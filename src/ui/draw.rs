@@ -575,15 +575,28 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
         }
     }
 
+    let is_editing = matches!(&app.state, AppState::Editing(_, _, _));
+    let border_color = if is_editing {
+        Color::LightMagenta
+    } else {
+        Color::Reset
+    };
+    let title_color = if is_editing {
+        Color::LightMagenta
+    } else {
+        Color::Yellow
+    };
+
     f.render_widget(
         Paragraph::new(app.input.as_str()).block(
             Block::default()
                 .title(Span::styled(
                     format!("Input: {}", app.status_message),
-                    Style::default().fg(Color::Yellow),
+                    Style::default().fg(title_color),
                 ))
                 .borders(Borders::ALL)
-                .border_type(BorderType::Double),
+                .border_type(BorderType::Double)
+                .border_style(Style::default().fg(border_color)),
         ),
         chunks[1],
     );
