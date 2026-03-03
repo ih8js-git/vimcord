@@ -87,7 +87,6 @@ pub enum AppAction {
     ApiUpdateDMs(Vec<DM>),
     ApiUpdateContext(Option<PermissionContext>),
     ApiUpdateCurrentUser(User),
-    ApiUpdateUnreadMessages(String, Vec<Message>),
     GatewayMessageCreate(Message),
     GatewayMessageUpdate(Message),
     GatewayMessageDelete(String, String),
@@ -306,70 +305,6 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         }
     });
 
-    let background_state = Arc::clone(&app_state);
-    let tx_background = tx_action.clone();
-    let mut rx_shutdown_background = tx_shutdown.subscribe();
-    let mut background_interval = time::interval(Duration::from_secs(3));
-
-    let background_handle: JoinHandle<()> = tokio::spawn(async move {
-        let api_client_clone;
-        {
-            let state = background_state.lock().await;
-            api_client_clone = state.api_client.clone();
-        }
-
-        // Wait a bit before starting background loops so we don't clobber initial requests
-        tokio::time::sleep(Duration::from_secs(5)).await;
-
-        loop {
-            tokio::select! {
-                _ = rx_shutdown_background.recv() => {
-                    return;
-                }
-
-                _ = background_interval.tick() => {
-                    // Fetch DMs to get the latest last_message_id for each
-                    if let Ok(dms) = api_client_clone.get_dms().await {
-                        let mut dms_to_fetch = Vec::new();
-
-                        {
-                            let state = background_state.lock().await;
-
-                            for dm in dms {
-                                if let Some(new_last_id) = &dm.last_message_id {
-                                    // Only fetch messages if we know we have a new message
-                                    let should_fetch = match state.last_message_ids.get(&dm.id) {
-                                        Some(tracked_id) => new_last_id.parse::<u64>().unwrap_or_default() > tracked_id.parse::<u64>().unwrap_or_default(),
-                                        None => true,
-                                    };
-
-                                    if should_fetch {
-                                        dms_to_fetch.push(dm.id.clone());
-                                    }
-                                }
-                            }
-                        }
-
-                        for channel_id in dms_to_fetch {
-                            if let Ok(messages) = api_client_clone.get_channel_messages(
-                                &channel_id,
-                                None,
-                                None,
-                                None,
-                                Some(5),
-                            ).await
-                                && let Err(e) = tx_background.send(AppAction::ApiUpdateUnreadMessages(channel_id, messages)).await
-                            {
-                                let _ = print_log(format!("Failed to send unread message update action: {e}").into(), LogType::Error);
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    });
-
     loop {
         {
             let mut state_guard = app_state.lock().await;
@@ -407,13 +342,7 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
 
     let _ = tx_shutdown.send(());
 
-    let _ = tokio::join!(
-        input_handle,
-        api_handle,
-        ticker_handle,
-        background_handle,
-        gateway_handle
-    );
+    let _ = tokio::join!(input_handle, api_handle, ticker_handle, gateway_handle);
 
     Ok(())
 }

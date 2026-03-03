@@ -989,61 +989,7 @@ pub async fn handle_keys_events(
         AppAction::ApiUpdateCurrentUser(user) => {
             state.current_user = Some(user);
         }
-        AppAction::ApiUpdateUnreadMessages(channel_id, new_messages) => {
-            let is_active_channel = match &state.state {
-                AppState::Chatting(active_id) => active_id == &channel_id,
-                _ => false,
-            };
 
-            if !new_messages.is_empty() {
-                // Only notify if we are not actively viewing this channel
-                if !is_active_channel {
-                    for msg in &new_messages {
-                        let should_notify = match state.last_message_ids.get(&channel_id) {
-                            // If we tracked it, check if it's strictly newer
-                            Some(last_id) => {
-                                msg.id.parse::<u64>().unwrap_or_default()
-                                    > last_id.parse::<u64>().unwrap_or_default()
-                            }
-                            // If we haven't tracked it, it's a completely new DM created mid-session!
-                            None => true,
-                        };
-
-                        if should_notify {
-                            let is_self = state
-                                .current_user
-                                .as_ref()
-                                .is_some_and(|u| u.id == msg.author.id);
-
-                            if !is_self {
-                                let sender = msg.author.username.clone();
-                                let content = if state.discreet_notifs {
-                                    "Sent you a DM".to_string()
-                                } else {
-                                    msg.content
-                                        .clone()
-                                        .unwrap_or_else(|| "Sent an attachment".to_string())
-                                };
-                                let _ = notify_rust::Notification::new()
-                                    .summary(&sender)
-                                    .body(&content)
-                                    .appname("vimcord")
-                                    .show();
-                            }
-                        }
-                    }
-                }
-
-                if let Some(newest_msg) = new_messages
-                    .iter()
-                    .max_by_key(|m| m.id.parse::<u64>().unwrap_or_default())
-                {
-                    state
-                        .last_message_ids
-                        .insert(channel_id, newest_msg.id.clone());
-                }
-            }
-        }
         AppAction::GatewayMessageCreate(msg) => {
             let active_channel_id = if let AppState::Chatting(id) = &state.state {
                 Some(id.clone())
