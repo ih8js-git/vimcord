@@ -1,6 +1,7 @@
 pub mod channel;
 pub mod dm;
 pub mod emoji;
+pub mod gateway;
 pub mod guild;
 pub mod message;
 pub mod user;
@@ -11,6 +12,7 @@ use serde::de::DeserializeOwned;
 pub use channel::Channel;
 pub use dm::DM;
 pub use emoji::Emoji;
+pub use gateway::GatewayClient;
 pub use guild::Guild;
 pub use message::Message;
 pub use user::User;

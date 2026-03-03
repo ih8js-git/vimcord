@@ -169,10 +169,46 @@ async fn input_submit(
             state.cursor_position = 0;
             state.status_message = format!("Loading messages for {selected_dm_name}...");
 
-            tx_action
-                .send(AppAction::TransitionToChat(dm_id_clone))
-                .await
-                .ok();
+            let tx_action_clone = tx_action.clone();
+            let api_client_clone = state.api_client.clone();
+            let channel_id_load = dm_id_clone.clone();
+
+            tokio::spawn(async move {
+                tx_action_clone
+                    .send(AppAction::TransitionToLoading(Window::Chat(
+                        channel_id_load.clone(),
+                    )))
+                    .await
+                    .ok();
+
+                match api_client_clone
+                    .get_channel_messages(&channel_id_load, None, None, None, Some(100))
+                    .await
+                {
+                    Ok(messages) => {
+                        if let Err(e) = tx_action_clone
+                            .send(AppAction::ApiUpdateMessages(messages))
+                            .await
+                        {
+                            let _ = print_log(
+                                format!("Failed to send message update action: {e}").into(),
+                                LogType::Error,
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        let _ =
+                            print_log(format!("Error loading DM chat: {e}").into(), LogType::Error);
+                    }
+                }
+
+                tx_action_clone
+                    .send(AppAction::TransitionToChat(channel_id_load))
+                    .await
+                    .ok();
+
+                tx_action_clone.send(AppAction::EndLoading).await.ok();
+            });
         }
         AppState::SelectingGuild => {
             let filter_text = state.input.to_lowercase();
@@ -998,7 +1034,6 @@ pub async fn handle_keys_events(
                     }
                 }
 
-                // Track the ID of the newest message in this batch (first in array or max ID)
                 if let Some(newest_msg) = new_messages
                     .iter()
                     .max_by_key(|m| m.id.parse::<u64>().unwrap_or_default())
@@ -1008,6 +1043,62 @@ pub async fn handle_keys_events(
                         .insert(channel_id, newest_msg.id.clone());
                 }
             }
+        }
+        AppAction::GatewayMessageCreate(msg) => {
+            let active_channel_id = if let AppState::Chatting(id) = &state.state {
+                Some(id.clone())
+            } else {
+                None
+            };
+
+            if Some(msg.channel_id.clone()) == active_channel_id {
+                let mut msgs = state.messages.clone();
+                msgs.push(msg.clone());
+                // In case it came slightly out of order
+                msgs.sort_by_key(|m| m.id.parse::<u64>().unwrap_or_default());
+                state.messages = msgs;
+            } else if state.dms.iter().any(|dm| dm.id == msg.channel_id) {
+                // If it's a DM and we're not actively viewing it, maybe notify
+                let is_self = state
+                    .current_user
+                    .as_ref()
+                    .is_some_and(|u| u.id == msg.author.id);
+
+                if !is_self {
+                    let sender = msg.author.username.clone();
+                    let content = if state.discreet_notifs {
+                        "Sent you a DM".to_string()
+                    } else {
+                        msg.content
+                            .clone()
+                            .unwrap_or_else(|| "Sent an attachment".to_string())
+                    };
+                    let _ = notify_rust::Notification::new()
+                        .summary(&sender)
+                        .body(&content)
+                        .appname("vimcord")
+                        .show();
+                }
+                state
+                    .last_message_ids
+                    .insert(msg.channel_id.clone(), msg.id.clone());
+            }
+        }
+        AppAction::GatewayMessageUpdate(msg) => {
+            let mut msgs = state.messages.clone();
+            if let Some(pos) = msgs.iter().position(|m| m.id == msg.id) {
+                // Merge updated fields. Guild messages often only send changed fields in UPDATE
+                // We'll replace the message entirely for simplicity, though Discord sometimes sends partials.
+                // Assuming `msg` has full data if it parses to `Message`
+                msgs[pos] = msg;
+                state.messages = msgs;
+            }
+        }
+        AppAction::GatewayMessageDelete(id, _channel_id) => {
+            let mut msgs = state.messages.clone();
+            msgs.retain(|m| m.id != id);
+            state.messages = msgs;
+            state.deleted_message_ids.insert(id);
         }
         AppAction::TransitionToChannels(guild_id) => {
             state.input = String::new();

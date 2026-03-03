@@ -88,6 +88,9 @@ pub enum AppAction {
     ApiUpdateContext(Option<PermissionContext>),
     ApiUpdateCurrentUser(User),
     ApiUpdateUnreadMessages(String, Vec<Message>),
+    GatewayMessageCreate(Message),
+    GatewayMessageUpdate(Message),
+    GatewayMessageDelete(String, String),
     TransitionToChat(String),
     TransitionToEditing(String, Message, String, char),
     TransitionToChannels(String),
@@ -225,7 +228,19 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
     let tx_api = tx_action.clone();
     let mut rx_shutdown_api = tx_shutdown.subscribe();
 
-    let mut interval = time::interval(Duration::from_secs(2));
+    let rx_shutdown_gateway = tx_shutdown.subscribe();
+
+    let gateway_token = token.clone();
+    let gateway_tx = tx_action.clone();
+    let gateway_handle: JoinHandle<()> = tokio::spawn(async move {
+        let client = crate::api::GatewayClient::new(gateway_token, gateway_tx);
+        if let Err(e) = client.connect(rx_shutdown_gateway).await {
+            let _ = print_log(
+                format!("Gateway connection failed: {e}").into(),
+                LogType::Error,
+            );
+        }
+    });
 
     let api_handle: JoinHandle<()> = tokio::spawn(async move {
         let api_client_clone;
@@ -281,44 +296,11 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
 
         tx_api.send(AppAction::EndLoading).await.ok();
 
+        // Loop just waits for shutdown now since HTTP polling is removed
         loop {
             tokio::select! {
                 _ = rx_shutdown_api.recv() => {
                     return;
-                }
-
-                _ = interval.tick() => {
-                    let current_channel_id = {
-                        let state = api_state.lock().await;
-                        match &state.state {
-                            AppState::Chatting(id) => Some(id.clone()),
-                            _ => None,
-                        }
-                    };
-
-                    if let Some(channel_id) = current_channel_id {
-                        const MESSAGE_LIMIT: usize = 100;
-
-                        match api_client_clone.get_channel_messages(
-                            &channel_id,
-                            None,
-                            None,
-                            None,
-                            Some(MESSAGE_LIMIT),
-                        )
-                        .await
-                        {
-                            Ok(messages) => {
-                                if let Err(e) = tx_api.send(AppAction::ApiUpdateMessages(messages)).await {
-                                    let _ = print_log(format!("Failed to send message update action: {e}").into(), LogType::Error);
-                                    return;
-                                }
-                            }
-                            Err(e) => {
-                                api_state.lock().await.status_message = format!("Error loading chat: {e}");
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -425,7 +407,13 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
 
     let _ = tx_shutdown.send(());
 
-    let _ = tokio::join!(input_handle, api_handle, ticker_handle, background_handle);
+    let _ = tokio::join!(
+        input_handle,
+        api_handle,
+        ticker_handle,
+        background_handle,
+        gateway_handle
+    );
 
     Ok(())
 }
