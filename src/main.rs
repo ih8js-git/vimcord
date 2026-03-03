@@ -80,7 +80,7 @@ pub enum AppAction {
     SelectRight,
     ApiDeleteMessage(String, String),
     ApiEditMessage(String, String, String),
-    ApiUpdateMessages(Vec<Message>),
+    ApiUpdateMessages(String, Vec<Message>),
     ApiUpdateChannel(Vec<Channel>),
     ApiUpdateEmojis(Vec<Emoji>),
     ApiUpdateGuilds(Vec<Guild>),

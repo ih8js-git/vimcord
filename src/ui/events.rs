@@ -187,7 +187,10 @@ async fn input_submit(
                 {
                     Ok(messages) => {
                         if let Err(e) = tx_action_clone
-                            .send(AppAction::ApiUpdateMessages(messages))
+                            .send(AppAction::ApiUpdateMessages(
+                                channel_id_load.clone(),
+                                messages,
+                            ))
                             .await
                         {
                             let _ = print_log(
@@ -201,11 +204,6 @@ async fn input_submit(
                             print_log(format!("Error loading DM chat: {e}").into(), LogType::Error);
                     }
                 }
-
-                tx_action_clone
-                    .send(AppAction::TransitionToChat(channel_id_load))
-                    .await
-                    .ok();
 
                 tx_action_clone.send(AppAction::EndLoading).await.ok();
             });
@@ -351,7 +349,13 @@ async fn input_submit(
                 .await
             {
                 Ok(messages) => {
-                    if let Err(e) = tx_action.send(AppAction::ApiUpdateMessages(messages)).await {
+                    if let Err(e) = tx_action
+                        .send(AppAction::ApiUpdateMessages(
+                            channel_id_clone.clone(),
+                            messages,
+                        ))
+                        .await
+                    {
                         let _ = print_log(
                             format!("Failed to send message update action: {e}").into(),
                             LogType::Error,
@@ -444,6 +448,7 @@ async fn input_submit(
                         Ok(msg) => {
                             let _ = tx_action_clone
                                 .send(AppAction::ApiUpdateMessages(
+                                    channel_id_clone.clone(),
                                     msgs.iter()
                                         .map(|m| {
                                             if m.id == msg.id {
@@ -921,16 +926,19 @@ pub async fn handle_keys_events(
         AppAction::SelectRight => {
             vim::handle_vim_keys(state, 'l', tx_action).await;
         }
-        AppAction::ApiUpdateMessages(new_messages) => {
-            let active_channel_id = if let AppState::Chatting(id) = &state.state {
-                Some(id.clone())
-            } else {
-                None
+        AppAction::ApiUpdateMessages(channel_id, new_messages) => {
+            let is_relevant = match &state.state {
+                AppState::Loading(Window::Chat(id)) => id == &channel_id,
+                AppState::Chatting(id) => id == &channel_id,
+                AppState::Editing(id, _, _) => id == &channel_id,
+                AppState::EmojiSelection(id) => id == &channel_id,
+                _ => false,
             };
+            if !is_relevant {
+                return None;
+            }
 
-            if let Some(channel_id) = active_channel_id
-                && let Some(newest_msg) = new_messages.iter().max_by_key(|m| &m.id)
-            {
+            if let Some(newest_msg) = new_messages.iter().max_by_key(|m| &m.id) {
                 state
                     .last_message_ids
                     .insert(channel_id, newest_msg.id.clone());
