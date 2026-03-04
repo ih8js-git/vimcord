@@ -177,7 +177,7 @@ impl GatewayClient {
                 }
             }
             "TYPING_START" => {
-                if let (Some(channel_id), Some(user_id), Some(timestamp)) = (
+                if let (Some(channel_id), Some(user_id), Some(_timestamp)) = (
                     d["channel_id"].as_str(),
                     d["user_id"].as_str(),
                     d["timestamp"].as_u64(),
@@ -192,7 +192,6 @@ impl GatewayClient {
                         .send(AppAction::GatewayTypingStart(
                             channel_id.to_string(),
                             user_id.to_string(),
-                            timestamp,
                             display_name,
                         ))
                         .await;

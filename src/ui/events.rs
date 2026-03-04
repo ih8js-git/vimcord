@@ -1036,7 +1036,7 @@ pub async fn handle_keys_events(
         AppAction::ApiUpdateCurrentUser(user) => {
             state.current_user = Some(user);
         }
-        AppAction::GatewayTypingStart(channel_id, user_id, _timestamp, display_name) => {
+        AppAction::GatewayTypingStart(channel_id, user_id, display_name) => {
             // Typing indicator expires after 10 seconds or when the user sends a message
             let now = std::time::Instant::now();
             let channel_typers = state.typing_users.entry(channel_id).or_default();
