@@ -1274,6 +1274,16 @@ pub async fn handle_keys_events(
                 };
             }
         }
+        AppAction::TransitionToLoadingMessages => {
+            state.is_loading = true;
+            state.status_message = "Loading Messages...".to_string();
+        }
+        AppAction::EndLoadingMessages => {
+            state.is_loading = false;
+            state.status_message =
+                "Chatting in channel. Press Enter to send message, Esc to return to channels."
+                    .to_string();
+        }
         AppAction::Tick => {
             state.tick_count = state.tick_count.wrapping_add(1);
 

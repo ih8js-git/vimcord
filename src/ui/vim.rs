@@ -379,10 +379,36 @@ pub async fn handle_vim_keys(
             }
         }
         'k' => {
-            if let AppState::Chatting(_) = &state.state {
-                if state.selection_index > 0 {
+            if let AppState::Chatting(channel_id) = &state.state {
+                if state.selection_index != 0 {
                     if state.selection_index < state.messages.len() {
                         state.selection_index += 1;
+                    } else if !state.is_loading {
+                        tx_action
+                            .send(AppAction::TransitionToLoadingMessages)
+                            .await
+                            .ok();
+
+                        if let Some(oldest) = state.messages.last() {
+                            let older_msgs = state
+                                .api_client
+                                .get_channel_messages(
+                                    &channel_id.clone(),
+                                    None,
+                                    Some(oldest.id.clone()),
+                                    None,
+                                    Some(100),
+                                )
+                                .await;
+
+                            if let Ok(new_messages) = older_msgs {
+                                for msg in new_messages.into_iter() {
+                                    state.messages.push(msg);
+                                }
+                            }
+                        }
+
+                        tx_action.send(AppAction::EndLoadingMessages).await.ok();
                     }
                 } else {
                     let current_pos = state.cursor_position;

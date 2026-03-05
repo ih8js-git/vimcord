@@ -101,7 +101,9 @@ pub enum AppAction {
     TransitionToDM,
     TransitionToHome,
     TransitionToLoading(Window),
+    TransitionToLoadingMessages,
     EndLoading,
+    EndLoadingMessages,
     SelectEmoji,
     Paste(String),
     Tick,
@@ -148,6 +150,7 @@ pub struct App {
     typing_users: HashMap<String, HashMap<String, std::time::Instant>>,
     user_names: HashMap<String, String>,
     silent_typing: bool,
+    is_loading: bool,
 }
 
 async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
@@ -198,6 +201,7 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         typing_users: HashMap::new(),
         user_names: HashMap::new(),
         silent_typing: config.silent_typing,
+        is_loading: false,
     }));
 
     let (tx_action, mut rx_action) = mpsc::channel::<AppAction>(32);
