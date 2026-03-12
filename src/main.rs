@@ -115,7 +115,7 @@ pub enum InputMode {
     Insert,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct App {
     api_client: ApiClient,
     state: AppState,
@@ -151,6 +151,7 @@ pub struct App {
     user_names: HashMap<String, String>,
     silent_typing: bool,
     is_loading: bool,
+    pub active_notifications: HashMap<String, Vec<notify_rust::NotificationHandle>>,
 }
 
 async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
@@ -202,6 +203,7 @@ async fn run_app(token: String, config: config::Config) -> Result<(), Error> {
         user_names: HashMap::new(),
         silent_typing: config.silent_typing,
         is_loading: false,
+        active_notifications: HashMap::new(),
     }));
 
     let (tx_action, mut rx_action) = mpsc::channel::<AppAction>(32);
