@@ -369,10 +369,11 @@ async fn input_submit(
                         ))
                         .await
                     {
-                        let _ = print_log(
+                        print_log(
                             format!("Failed to send message update action: {e}").into(),
                             LogType::Error,
-                        );
+                        )
+                        .ok();
                         return None;
                     }
                 }
@@ -1285,7 +1286,7 @@ pub async fn handle_keys_events(
             state.state = AppState::Editing(
                 channel_id_clone,
                 channel_name.clone(),
-                message_clone,
+                Box::new(message_clone),
                 content_clone,
             );
             state.status_message =

@@ -65,7 +65,7 @@ pub enum AppState {
     SelectingChannel(String, String),
     Chatting(String, String),
     EmojiSelection(String, String),
-    Editing(String, String, Message, String),
+    Editing(String, String, Box<Message>, String),
     Loading(Window),
 }
 
