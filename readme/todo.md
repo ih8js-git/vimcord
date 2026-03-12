@@ -18,9 +18,11 @@ The following features are grouped by **Importance** (Foundation, Critical, High
 
 ### 0. Foundation (Blockers)
 *These are infrastructural tasks that must be completed before other features can be fully realized.*
-1. **WebSocket / Gateway Migration** *(Difficulty: Hard)*
-   - **Description**: Refactor the application network layer away from relying solely on HTTP requests. Move to persistent WebSocket connections. **This is a foundational prerequisite.** Many other features (such as Proper Push Notifications, Typing Indicators, Presence Updates, and Slash Commands) are currently blocked because they require a WebSocket connection to be implemented correctly.
-   - **Implementation**: Connect to the Discord Gateway via WebSockets to receive real-time push events (e.g., new messages, status updates, typing indicators) rather than making HTTP API calls or polling.
+1. <details>
+     <summary><sub><s><strong>WebSocket / Gateway Migration</strong> <em>(Difficulty: Hard)</em></s></sub></summary>
+     <strong>Description</strong>: Refactor the application network layer away from relying solely on HTTP requests. Move to persistent WebSocket connections. **This is a foundational prerequisite.** Many other features (such as Proper Push Notifications, Typing Indicators, Presence Updates, and Slash Commands) are currently blocked because they require a WebSocket connection to be implemented correctly.<br/>
+     <strong>Implementation</strong>: Connect to the Discord Gateway via WebSockets to receive real-time push events (e.g., new messages, status updates, typing indicators) rather than making HTTP API calls or polling.
+   </details>
 
 ### 1. Critical Importance (Core Usability)
 *These are essential features that users expect from any functioning chat client. Without these, the client feels incomplete.*
