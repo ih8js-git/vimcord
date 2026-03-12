@@ -539,15 +539,13 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
 
         let mut filtered_items: Vec<ListItem> = Vec::new();
 
-        let app_clone = app.clone();
-
-        let filtered_unicode: Vec<&(String, String)> = app_clone
+        let filtered_unicode: Vec<&(String, String)> = app
             .emoji_map
             .iter()
             .filter(|(name, _)| name.starts_with(&app.emoji_filter))
             .collect();
 
-        let filtered_custom: Vec<&Emoji> = app_clone
+        let filtered_custom: Vec<&Emoji> = app
             .custom_emojis
             .iter()
             .filter(|e| e.name.starts_with(&app.emoji_filter))

@@ -133,7 +133,7 @@ async fn input_submit(
     filtered_custom: Vec<&Emoji>,
     total_filtered_emojis: usize,
 ) -> Option<KeywordAction> {
-    match &state.clone().state {
+    match state.state.clone() {
         AppState::Loading(_) => {}
         AppState::Home => match state.selection_index {
             0 => {
@@ -670,16 +670,14 @@ pub async fn handle_keys_events(
     action: AppAction,
     tx_action: Sender<AppAction>,
 ) -> Option<KeywordAction> {
-    let state_clone = state.clone();
-    let filtered_unicode: Vec<&(String, String)> = state_clone
-        .emoji_map
+    let emoji_map_clone = state.emoji_map.clone();
+    let filtered_unicode: Vec<&(String, String)> = emoji_map_clone
         .iter()
         .filter(|(name, _)| name.starts_with(&state.emoji_filter))
         .collect();
 
-    let state_clone = state.clone();
-    let filtered_custom: Vec<&Emoji> = state_clone
-        .custom_emojis
+    let custom_emojis_clone = state.custom_emojis.clone();
+    let filtered_custom: Vec<&Emoji> = custom_emojis_clone
         .iter()
         .filter(|e| e.name.starts_with(&state.emoji_filter))
         .collect();
@@ -790,7 +788,7 @@ pub async fn handle_keys_events(
         }
         AppAction::SelectEmoji => {
             if let AppState::Chatting(channel_id, channel_name)
-            | AppState::Editing(channel_id, channel_name, _, _) = &mut state.clone().state
+            | AppState::Editing(channel_id, channel_name, _, _) = state.state.clone()
             {
                 let cursor_pos = std::cmp::min(state.cursor_position, state.input.len());
                 let is_start_of_emoji = cursor_pos == 0 || state.input[..cursor_pos].ends_with(' ');
@@ -986,7 +984,23 @@ pub async fn handle_keys_events(
             if let Some(newest_msg) = new_messages.iter().max_by_key(|m| &m.id) {
                 state
                     .last_message_ids
-                    .insert(channel_id, newest_msg.id.clone());
+                    .insert(channel_id.clone(), newest_msg.id.clone());
+
+                let api_client_clone = state.api_client.clone();
+                let channel_id_clone = channel_id.clone();
+                let msg_id_clone = newest_msg.id.clone();
+                tokio::spawn(async move {
+                    let _ = api_client_clone
+                        .ack_message(&channel_id_clone, &msg_id_clone)
+                        .await;
+                });
+            }
+
+            // Clear any active desktop notifications for this channel
+            if let Some(handles) = state.active_notifications.remove(&channel_id) {
+                for handle in handles {
+                    handle.close();
+                }
             }
             // Seed the username cache from all loaded message authors
             for msg in &new_messages {
@@ -1082,6 +1096,19 @@ pub async fn handle_keys_events(
                 // Sort by descending ID: newest messages first (to match REST API response)
                 msgs.sort_by_key(|m| std::cmp::Reverse(m.id.parse::<u64>().unwrap_or_default()));
                 state.messages = msgs;
+
+                state
+                    .last_message_ids
+                    .insert(msg.channel_id.clone(), msg.id.clone());
+
+                let api_client_clone = state.api_client.clone();
+                let channel_id_clone = msg.channel_id.clone();
+                let msg_id_clone = msg.id.clone();
+                tokio::spawn(async move {
+                    let _ = api_client_clone
+                        .ack_message(&channel_id_clone, &msg_id_clone)
+                        .await;
+                });
             } else if state.dms.iter().any(|dm| dm.id == msg.channel_id) {
                 // If it's a DM and we're not actively viewing it, maybe notify
                 let is_self = state
@@ -1098,11 +1125,18 @@ pub async fn handle_keys_events(
                             .clone()
                             .unwrap_or_else(|| "Sent an attachment".to_string())
                     };
-                    let _ = notify_rust::Notification::new()
+                    if let Ok(handle) = notify_rust::Notification::new()
                         .summary(&sender)
                         .body(&content)
                         .appname("vimcord")
-                        .show();
+                        .show()
+                    {
+                        state
+                            .active_notifications
+                            .entry(msg.channel_id.clone())
+                            .or_default()
+                            .push(handle);
+                    }
                 }
                 state
                     .last_message_ids
@@ -1305,7 +1339,7 @@ pub async fn handle_keys_events(
             state.status_message = "Loading...".to_string();
         }
         AppAction::EndLoading => {
-            if let AppState::Loading(redirect) = &state.clone().state {
+            if let AppState::Loading(redirect) = state.state.clone() {
                 match redirect {
                     Window::Home => tx_action.send(AppAction::TransitionToHome).await.ok(),
                     Window::Guild => tx_action.send(AppAction::TransitionToGuilds).await.ok(),
