@@ -36,9 +36,11 @@ The following features are grouped by **Importance** (Foundation, Critical, High
      <strong>Description</strong>: Updating the local and remote "last read" state to clear unread notification badges.<br/>
      <strong>Implementation</strong>: Hitting the `/ack` endpoint for channels when viewed.
     </details>
-3. **Proper Push Notifications** *(Difficulty: Medium) (🔒 Blocked by WebSockets)*
-   - **Description**: Replace the current hacky workaround for notifications with reliable, instant desktop push notifications for new messages.
-   - **Implementation**: Listen for `MESSAGE_CREATE` events in real-time over the WebSocket Gateway to trigger native notifications correctly without missing any or double-notifying.
+3. <details> 
+     <summary><sub><s><strong>Proper Push Notifications</strong> <em>(Difficulty: Medium)</em></s></sub></summary>
+     <strong>Description</strong>: Replace the current hacky workaround for notifications with reliable, instant desktop push notifications for new messages.<br/>
+     <strong>Implementation</strong>: Listen for `MESSAGE_CREATE` events in real-time over the WebSocket Gateway to trigger native notifications correctly without missing any or double-notifying.
+    </details>
 4. <details>
      <summary><sub><s><strong>Message Editing</strong> <em>(Difficulty: Medium)</em></s></sub></summary>
      <strong>Description</strong>: Ability to edit existing sent messages.<br/>
@@ -54,15 +56,17 @@ The following features are grouped by **Importance** (Foundation, Critical, High
 ### 2. High Importance (Standard Discord Experience)
 *Features that make Discord unique and are heavily used in daily communication.*
 
-1. **User Status/Presence Update** *(Difficulty: Easy) (🔒 Blocked by WebSockets)*
+1. **User Status/Presence Update** *(Difficulty: Easy)*
    - **Description**: Setting custom status text or changing presence (Online, Idle, DND, Invisible).
    - **Implementation**: Sending Gateway presence update payloads directly or via a simple UI modal.
 2. **Pinned Messages** *(Difficulty: Easy)*
    - **Description**: A dedicated UI panel to view and jump to messages pinned in a channel.
    - **Implementation**: Fetching from the pins endpoint and rendering a static list.
-3. **Typing Indicators** *(Difficulty: Easy) (🔒 Blocked by WebSockets)*
-   - **Description**: Showing "User is typing..." when someone is active in the current channel.
-   - **Implementation**: Listening to Gateway events (`TYPING_START`) and displaying a transient UI element.
+3. <details> 
+     <summary><sub><s><strong>Typing Indicators</strong> <em>(Difficulty: Easy)</em></s></sub></summary>
+     <strong>Description</strong>: Showing "User is typing..." when someone is active in the current channel.<br/>
+     <strong>Implementation</strong>: Listening to Gateway events (`TYPING_START`) and displaying a transient UI element.
+    </details>
 4. **Reactions** *(Difficulty: Medium)*
    - **Description**: Viewing, adding, and removing Unicode and custom emoji reactions on messages.
    - **Implementation**: UI for selecting emojis, rendering reaction counts under messages, and hitting the reactions endpoints.
@@ -94,7 +98,7 @@ The following features are grouped by **Importance** (Foundation, Critical, High
 4. **File Uploads** *(Difficulty: Hard)*
    - **Description**: Sending attachments alongside messages.
    - **Implementation**: Requires `multipart/form-data` requests and a file picker interface in the terminal.
-5. **Slash Commands / Interactions** *(Difficulty: Hard) (🔒 Blocked by WebSockets)*
+5. **Slash Commands / Interactions** *(Difficulty: Hard)*
    - **Description**: Support for executing application commands (`/commands`).
    - **Implementation**: Highly complex. Requires fetching command lists, parsing command options dynamically in the UI, and handling interaction payloads over the Gateway.
 6. **Message Search** *(Difficulty: Hard)*
@@ -113,6 +117,6 @@ The following features are grouped by **Importance** (Foundation, Critical, High
 3. **Stickers** *(Difficulty: Impractical)*
    - **Description**: Rendering Discord stickers.
    - **Implementation**: Very difficult to visually represent in a standard text terminal without fallback to mere URLs or text descriptions.
-4. **Video/Screen Sharing** *(Difficulty: Impractical) (🔒 Blocked by WebSockets)*
+4. **Video/Screen Sharing** *(Difficulty: Impractical)*
    - **Description**: Viewing or broadcasting video streams.
    - **Implementation**: Essentially impossible to cleanly achieve in a standard terminal environment without delegating to a GUI tool.
