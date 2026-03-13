@@ -103,10 +103,10 @@ pub fn draw_ui(f: &mut ratatui::Frame, app: &mut App) {
                             .get(&d.recipients[0].id)
                             .map(|s| s.as_str())
                         {
-                            Some("online") => ("●", Color::LightGreen),
-                            Some("idle") => ("🌙", Color::LightYellow),
-                            Some("dnd") => ("●", Color::LightRed),
-                            _ => ("○", Color::DarkGray), // offline/invisible/unknown
+                            Some("online") => ("", Color::LightGreen),
+                            Some("idle") => ("", Color::LightYellow),
+                            Some("dnd") => ("", Color::LightRed),
+                            _ => ("", Color::DarkGray), // offline/invisible/unknown
                         };
                         spans.push(Span::styled(
                             format!("{} ", status_char),
